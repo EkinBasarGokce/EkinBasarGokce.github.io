@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ekin Başar Gökçe</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg:     #e0d8cb;
+      --ink:    #1c1510;
+      --card:   rgba(243, 237, 224, 0.93);
+      --border: rgba(150, 120, 80, 0.32);
+      --accent: #7a5c3c;
+      --text:   #2a2018;
+      --muted:  #7a6450;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    /* ── Canvas background ── */
+    #bg {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── Page layout ── */
+    .page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1.5rem;
+    }
+
+    /* ── Card ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 3rem 3.5rem;
+      max-width: 620px;
+      width: 100%;
+      box-shadow:
+        0 2px 4px rgba(0,0,0,.06),
+        0 12px 40px rgba(0,0,0,.13);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    /* ── Header ── */
+    .name {
+      font-family: 'Lora', Georgia, serif;
+      font-size: 2.65rem;
+      font-weight: 700;
+      letter-spacing: -.01em;
+      color: var(--ink);
+      line-height: 1.05;
+      margin-bottom: .3rem;
+    }
+
+    .role {
+      font-size: .8rem;
+      font-weight: 400;
+      letter-spacing: .17em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 2.2rem;
+      padding-bottom: 2rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Sections ── */
+    .s + .s { margin-top: 1.7rem; }
+
+    .s-label {
+      font-size: .7rem;
+      font-weight: 600;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: .55rem;
+    }
+
+    .s-body {
+      font-size: .97rem;
+      line-height: 1.78;
+      color: var(--text);
+    }
+
+    /* ── Tags ── */
+    .tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .42rem;
+    }
+
+    .tag {
+      font-size: .77rem;
+      letter-spacing: .03em;
+      padding: .27rem .7rem;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--muted);
+      background: rgba(150, 120, 80, .06);
+    }
+
+    /* ── Divider ── */
+    hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 1.7rem 0;
+    }
+
+    /* ── Links footer ── */
+    .links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.4rem;
+      margin-top: 2.2rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .link {
+      display: inline-flex;
+      align-items: center;
+      gap: .35rem;
+      font-size: .82rem;
+      font-weight: 500;
+      letter-spacing: .04em;
+      text-decoration: none;
+      color: var(--accent);
+      transition: color .15s;
+    }
+
+    .link:hover { color: var(--ink); }
+
+    .link svg {
+      width: 14px;
+      height: 14px;
+      flex-shrink: 0;
+      fill: currentColor;
+    }
+
+    @media (max-width: 520px) {
+      .card { padding: 2rem 1.5rem; }
+      .name { font-size: 2rem; }
+    }
+  </style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+
+<div class="page">
+  <div class="card">
+
+    <h1 class="name">Ekin Başar Gökçe</h1>
+    <!-- EDIT: update your role / affiliation below -->
+    <p class="role">CS Student &amp; AI Researcher &nbsp;·&nbsp; Sabancı University</p>
+
+    <div class="s">
+      <p class="s-label">About</p>
+      <!-- EDIT: replace with your own bio -->
+      <p class="s-body">
+        Computer science student with a focus on machine learning and AI agent
+        systems. I enjoy building things, thinking through hard problems, and
+        finding where research meets engineering. Currently exploring LLM reasoning
+        and agentic pipelines.
+      </p>
+    </div>
+
+    <hr>
+
+    <div class="s">
+      <p class="s-label">Interests</p>
+      <!-- EDIT: add / remove interest tags -->
+      <div class="tags">
+        <span class="tag">LLM Agents</span>
+        <span class="tag">Machine Learning</span>
+        <span class="tag">Systems Design</span>
+        <span class="tag">Human-Computer Interaction</span>
+      </div>
+    </div>
+
+    <div class="s">
+      <p class="s-label">Skills &amp; Tools</p>
+      <!-- EDIT: add / remove skill tags -->
+      <div class="tags">
+        <span class="tag">Python</span>
+        <span class="tag">JavaScript / TypeScript</span>
+        <span class="tag">PyTorch</span>
+        <span class="tag">SQL</span>
+        <span class="tag">Git</span>
+      </div>
+    </div>
+
+    <div class="links">
+      <a href="https://github.com/EkinBasarGokce" class="link" target="_blank" rel="noopener">
+        <!-- GitHub mark icon (public domain) -->
+        <svg viewBox="0 0 24 24"><path d="M12 .3a12 12 0 0 0-3.79 23.4c.6.1.82-.26.82-.57v-2c-3.34.72-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.08-.74.08-.72.08-.72 1.2.08 1.83 1.23 1.83 1.23 1.07 1.83 2.8 1.3 3.49 1 .1-.78.42-1.31.76-1.61-2.67-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.14-.3-.54-1.52.1-3.18 0 0 1-.32 3.3 1.23a11.5 11.5 0 0 1 6 0c2.28-1.55 3.29-1.23 3.29-1.23.65 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.8 5.63-5.48 5.92.43.37.81 1.1.81 2.22v3.29c0 .31.2.68.82.56A12 12 0 0 0 12 .3"/></svg>
+        GitHub
+      </a>
+      <!-- EDIT: replace with your LinkedIn profile URL -->
+      <a href="https://linkedin.com/in/your-id" class="link" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24"><path d="M20.45 20.45h-3.55v-5.57c0-1.33-.03-3.04-1.85-3.04-1.85 0-2.13 1.44-2.13 2.94v5.67H9.37V9h3.41v1.56h.05c.48-.9 1.63-1.85 3.36-1.85 3.59 0 4.25 2.36 4.25 5.44v6.3zM5.34 7.43a2.06 2.06 0 1 1 0-4.12 2.06 2.06 0 0 1 0 4.12zm1.78 13.02H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.56C0 23.23.79 24 1.77 24h20.44c.98 0 1.79-.77 1.79-1.72V1.72C24 .77 23.2 0 22.22 0z"/></svg>
+        LinkedIn
+      </a>
+      <!-- EDIT: replace with your email -->
+      <a href="mailto:your@email.com" class="link">
+        <svg viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>
+        Email
+      </a>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  const canvas = document.getElementById('bg');
+  const ctx    = canvas.getContext('2d');
+
+  /* ── Seeded PRNG (mulberry32) ──────────────────────────────── */
+  function mkRng(seed) {
+    let s = seed >>> 0;
+    return function () {
+      s |= 0; s = (s + 0x6D2B79F5) | 0;
+      let t = Math.imul(s ^ (s >>> 15), 1 | s);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  /* ── Sketchy drawing helpers ───────────────────────────────── */
+  const J = 1.3; // jitter scale in px
+
+  function jx(x, r) { return x + (r() - .5) * J; }
+  function jy(y, r) { return y + (r() - .5) * J; }
+
+  /* Sketchy ellipse */
+  function skOval(cx, cy, rx, ry, r) {
+    const N = 68;
+    ctx.beginPath();
+    for (let i = 0; i <= N; i++) {
+      const a = (i / N) * Math.PI * 2;
+      const x = jx(cx + Math.cos(a) * rx, r);
+      const y = jy(cy + Math.sin(a) * ry, r);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+  }
+
+  /* Sketchy line (slight midpoint bow) */
+  function skLine(x1, y1, x2, y2, r) {
+    const ax = jx(x1, r), ay = jy(y1, r);
+    const bx = jx(x2, r), by = jy(y2, r);
+    const mx = (ax + bx) / 2 + (r() - .5) * J * 2;
+    const my = (ay + by) / 2 + (r() - .5) * J * 2;
+    ctx.beginPath();
+    ctx.moveTo(ax, ay);
+    ctx.quadraticCurveTo(mx, my, bx, by);
+  }
+
+  /* Sketchy arc */
+  function skArc(cx, cy, radius, a0, a1, r) {
+    const N = 24;
+    ctx.beginPath();
+    for (let i = 0; i <= N; i++) {
+      const a  = a0 + (i / N) * (a1 - a0);
+      const rr = radius + (r() - .5) * J;
+      const x  = jx(cx + Math.cos(a) * rr, r);
+      const y  = jy(cy + Math.sin(a) * rr, r);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+  }
+
+  /* ── Palette ───────────────────────────────────────────────── */
+  const INK        = '#1c1510';
+  const SKINS      = [null, null, null, '#e8c8a0', '#d4a574', '#c8956c', '#f0d5a8'];
+  const HAIR_COLS  = ['#1c1510', '#1c1510', '#1c1510', '#2d2010', '#3d2d18'];
+  const HAT_COLS   = ['#4a6a8a', '#3d6b4a', '#7a7a6a', '#3d3020', '#6b4c3b', '#556b6a'];
+
+  /* ── Draw one face ─────────────────────────────────────────── */
+  function drawFace(cx, cy, sz, seed) {
+    const r = mkRng(seed);
+
+    const wm = 0.72 + r() * 0.28;
+    const hm = 0.80 + r() * 0.30;
+    const hw = sz * wm * 0.43;
+    const hh = sz * hm * 0.48;
+
+    const skin    = SKINS[Math.floor(r() * SKINS.length)];
+    const hairCol = HAIR_COLS[Math.floor(r() * HAIR_COLS.length)];
+
+    ctx.save();
+    ctx.lineWidth  = 1.2;
+    ctx.strokeStyle = INK;
+    ctx.fillStyle   = INK;
+
+    /* — head — */
+    if (skin) {
+      ctx.fillStyle = skin;
+      skOval(cx, cy, hw, hh, r);
+      ctx.fill();
+      ctx.fillStyle = INK;
+    }
+    skOval(cx, cy, hw, hh, r); ctx.stroke();
+
+    /* — eyes — */
+    const eyeY  = cy - hh * .12;
+    const eyeEx = hw * .28;
+    const eyeR  = sz * .054;
+    const eStyle = Math.floor(r() * 5);
+
+    for (const sd of [-1, 1]) {
+      const ex = cx + sd * eyeEx;
+      ctx.lineWidth = 1.1;
+      if (eStyle === 0) {
+        // filled dot
+        ctx.beginPath(); ctx.arc(jx(ex,r), jy(eyeY,r), eyeR*.44, 0, Math.PI*2); ctx.fill();
+      } else if (eStyle === 1) {
+        // circle + pupil
+        skOval(ex, eyeY, eyeR, eyeR*.85, r); ctx.stroke();
+        ctx.beginPath(); ctx.arc(jx(ex,r), jy(eyeY,r), eyeR*.32, 0, Math.PI*2); ctx.fill();
+      } else if (eStyle === 2) {
+        // X
+        const s = eyeR * .72;
+        skLine(ex-s, eyeY-s, ex+s, eyeY+s, r); ctx.stroke();
+        skLine(ex+s, eyeY-s, ex-s, eyeY+s, r); ctx.stroke();
+      } else if (eStyle === 3) {
+        // sleepy arc + pupil below
+        skArc(ex, eyeY+eyeR*.2, eyeR, Math.PI, 0, r); ctx.stroke();
+        ctx.beginPath(); ctx.arc(jx(ex,r), jy(eyeY+eyeR*.3,r), eyeR*.27, 0, Math.PI*2); ctx.fill();
+      } else {
+        // wide oval
+        skOval(ex, eyeY, eyeR*1.15, eyeR*.85, r); ctx.stroke();
+        ctx.beginPath(); ctx.arc(jx(ex,r), jy(eyeY,r), eyeR*.37, 0, Math.PI*2); ctx.fill();
+      }
+    }
+
+    /* — glasses (28%) — */
+    if (r() < .28) {
+      ctx.lineWidth = 1.0;
+      const gr = eyeR * 1.1;
+      if (r() < .5) {
+        skOval(cx - eyeEx, eyeY, gr, gr, r);      ctx.stroke();
+        skOval(cx + eyeEx, eyeY, gr, gr, r);      ctx.stroke();
+        skLine(cx-eyeEx+gr, eyeY, cx+eyeEx-gr, eyeY, r); ctx.stroke();
+      } else {
+        const gw = gr * 1.2, gh = gr * .82;
+        for (const sd of [-1, 1]) {
+          const gx = cx + sd * eyeEx;
+          skLine(gx-gw, eyeY-gh, gx+gw, eyeY-gh, r); ctx.stroke();
+          skLine(gx+gw, eyeY-gh, gx+gw, eyeY+gh, r); ctx.stroke();
+          skLine(gx+gw, eyeY+gh, gx-gw, eyeY+gh, r); ctx.stroke();
+          skLine(gx-gw, eyeY+gh, gx-gw, eyeY-gh, r); ctx.stroke();
+        }
+        skLine(cx-eyeEx+gw, eyeY, cx+eyeEx-gw, eyeY, r); ctx.stroke();
+      }
+    }
+
+    /* — nose — */
+    ctx.lineWidth = 1.1;
+    const nY    = cy + hh * .10;
+    const nStyle = Math.floor(r() * 3);
+    if (nStyle === 0) {
+      skLine(cx-sz*.052, nY-sz*.04, cx, nY, r); ctx.stroke();
+      skLine(cx, nY, cx+sz*.052, nY-sz*.04, r); ctx.stroke();
+    } else if (nStyle === 1) {
+      ctx.beginPath(); ctx.arc(jx(cx,r), jy(nY,r), sz*.022, 0, Math.PI*2); ctx.fill();
+      for (const sd of [-1, 1]) {
+        ctx.beginPath(); ctx.arc(jx(cx+sd*sz*.048,r), jy(nY,r), sz*.015, 0, Math.PI*2); ctx.fill();
+      }
+    } else {
+      skLine(cx, nY-sz*.07, cx-sz*.058, nY+sz*.02, r); ctx.stroke();
+      skLine(cx, nY-sz*.07, cx+sz*.058, nY+sz*.02, r); ctx.stroke();
+    }
+
+    /* — mouth — */
+    ctx.lineWidth = 1.2;
+    const mY    = cy + hh * .33;
+    const mW    = sz * .125;
+    const mStyle = Math.floor(r() * 4);
+    if (mStyle === 0) {
+      skLine(cx-mW, mY, cx+mW, mY, r); ctx.stroke();
+    } else if (mStyle === 1) {
+      skArc(cx, mY-sz*.01, mW, .07, Math.PI-.07, r); ctx.stroke();
+    } else if (mStyle === 2) {
+      skArc(cx, mY+sz*.04, mW, -Math.PI+.07, -.07, r); ctx.stroke();
+    } else {
+      ctx.fillStyle = '#2d1a0e';
+      skOval(cx, mY, mW*.62, sz*.034, r); ctx.fill();
+      ctx.strokeStyle = INK; ctx.fillStyle = INK;
+      skOval(cx, mY, mW*.62, sz*.034, r); ctx.stroke();
+    }
+
+    /* — hair — */
+    ctx.strokeStyle = hairCol;
+    ctx.fillStyle   = hairCol;
+    const topY   = cy - hh;
+    const hStyle = Math.floor(r() * 8);
+    ctx.lineWidth = 1.1;
+
+    if (hStyle === 0) {
+      // short perimeter lines
+      const N = 18;
+      for (let i = 0; i < N; i++) {
+        const a  = -Math.PI + (i/N)*Math.PI;
+        const bx = cx + Math.cos(a)*hw, by = cy + Math.sin(a)*hh;
+        const ln = 3 + r()*5;
+        skLine(bx, by, bx+Math.cos(a)*ln, by+Math.sin(a)*ln, r); ctx.stroke();
+      }
+    } else if (hStyle === 1) {
+      // close-cropped fill cap
+      ctx.beginPath();
+      ctx.moveTo(cx-hw, cy-hh*.1);
+      ctx.quadraticCurveTo(cx-hw*.2, topY-hh*.12, cx+hw*.2, topY-hh*.12);
+      ctx.quadraticCurveTo(cx+hw*.8, topY, cx+hw, cy-hh*.1);
+      ctx.closePath(); ctx.fill();
+    } else if (hStyle === 2) {
+      // spiky
+      const N = 10 + Math.floor(r()*6);
+      for (let i = 0; i < N; i++) {
+        const a  = -Math.PI + (i/N)*Math.PI*1.1 - .05;
+        const bx = cx+Math.cos(a)*hw*.92, by = cy+Math.sin(a)*hh*.92;
+        const ln = 6 + r()*12;
+        const sa = a + (r()-.5)*.5;
+        ctx.lineWidth = .9 + r()*.5;
+        skLine(bx, by, bx+Math.cos(sa)*ln, by+Math.sin(sa)*ln - ln*.2, r); ctx.stroke();
+      }
+    } else if (hStyle === 3) {
+      // mohawk
+      for (let i = -3; i <= 3; i++) {
+        const mx = cx + i * hw * .12;
+        const ln = 7 + r()*9;
+        skLine(mx, topY+hh*.15, mx+(r()-.5)*3, topY-ln, r); ctx.stroke();
+      }
+    } else if (hStyle === 4) {
+      // curly
+      const N = 14 + Math.floor(r()*8);
+      ctx.lineWidth = .85;
+      for (let i = 0; i < N; i++) {
+        const a  = -Math.PI + (i/N)*Math.PI;
+        const bx = cx+Math.cos(a)*hw+(r()-.5)*5;
+        const by = cy+Math.sin(a)*hh*.92+(r()-.5)*5;
+        skOval(bx, by, 2+r()*3, 2+r()*2.5, r); ctx.stroke();
+      }
+    } else if (hStyle === 5) {
+      // swept side-part
+      ctx.beginPath();
+      ctx.moveTo(cx-hw, cy-hh*.4);
+      ctx.quadraticCurveTo(cx-hw*.3, topY-.08*hh, cx+hw*.6, topY+.2*hh);
+      ctx.lineTo(cx+hw, cy-hh*.3);
+      ctx.quadraticCurveTo(cx+hw*.4, topY, cx, topY-.05*hh);
+      ctx.quadraticCurveTo(cx-hw*.5, topY, cx-hw, cy-hh*.4);
+      ctx.closePath(); ctx.fill();
+    } else if (hStyle === 6) {
+      // nearly bald – tiny lines
+      ctx.lineWidth = .7;
+      const N = 12;
+      for (let i = 0; i < N; i++) {
+        const a  = -Math.PI*.86 + (i/N)*Math.PI*.72;
+        const x1 = cx+Math.cos(a)*hw*.88, y1 = cy+Math.sin(a)*hh*.88;
+        const x2 = cx+Math.cos(a)*hw*1.03, y2 = cy+Math.sin(a)*hh*1.03;
+        skLine(x1, y1, x2, y2, r); ctx.stroke();
+      }
+    } else {
+      // wavy
+      const N = 7;
+      for (let i = 0; i < N; i++) {
+        const wx = cx - hw*1.05 + (i/(N-1))*hw*2.1;
+        const wy = topY - hh*.08 + (r()-.5)*6;
+        const ln = 7 + r()*10;
+        ctx.beginPath(); ctx.moveTo(wx, wy);
+        for (let j = 0; j < 4; j++) {
+          ctx.quadraticCurveTo(wx+(r()-.5)*6, wy-j*ln/4-2, wx+(r()-.5)*4, wy-(j+1)*ln/4);
+        }
+        ctx.stroke();
+      }
+    }
+
+    /* — hat (22%) — */
+    if (r() < .22) {
+      const hatCol = HAT_COLS[Math.floor(r()*HAT_COLS.length)];
+      ctx.strokeStyle = INK; ctx.fillStyle = hatCol; ctx.lineWidth = 1.2;
+      const hType = Math.floor(r()*3);
+
+      if (hType === 0) {
+        // beanie
+        ctx.beginPath();
+        ctx.moveTo(cx-hw*.88, cy-hh*.45);
+        ctx.quadraticCurveTo(cx-hw*.9, topY-hh*.18, cx, topY-hh*.22);
+        ctx.quadraticCurveTo(cx+hw*.9, topY-hh*.18, cx+hw*.88, cy-hh*.45);
+        ctx.lineTo(cx-hw*.88, cy-hh*.45);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.lineWidth = 2;
+        skLine(cx-hw*.88, cy-hh*.45, cx+hw*.88, cy-hh*.45, r); ctx.stroke();
+      } else if (hType === 1) {
+        // flat cap with peak
+        ctx.beginPath();
+        ctx.moveTo(cx-hw*.88, cy-hh*.38);
+        ctx.lineTo(cx-hw*.88, topY+hh*.22);
+        ctx.quadraticCurveTo(cx, topY-.02*hh, cx+hw*.88, topY+hh*.22);
+        ctx.lineTo(cx+hw*.88, cy-hh*.38);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx-hw*.88, cy-hh*.38);
+        ctx.lineTo(cx-hw*1.25, cy-hh*.28);
+        ctx.lineTo(cx-hw*.88, cy-hh*.18);
+        ctx.closePath(); ctx.fill(); ctx.stroke();
+      } else {
+        // flat-top with wide brim
+        ctx.beginPath();
+        ctx.rect(cx-hw*.82, topY, hw*1.64, hh*.55);
+        ctx.fill(); ctx.stroke();
+        ctx.lineWidth = 1.5;
+        skLine(cx-hw*1.05, topY+hh*.55, cx+hw*1.05, topY+hh*.55, r); ctx.stroke();
+      }
+    }
+
+    /* — beard (22%) — */
+    ctx.strokeStyle = INK; ctx.fillStyle = INK;
+    if (r() < .22) {
+      if (r() < .5) {
+        // stipple
+        const N = 28;
+        for (let i = 0; i < N; i++) {
+          const a  = .05 + r() * Math.PI * .9;
+          const d  = .62 + r() * .32;
+          const px = cx+Math.cos(a)*hw*d, py = cy+Math.sin(a)*hh*d;
+          ctx.beginPath(); ctx.arc(px, py, .7+r()*.7, 0, Math.PI*2); ctx.fill();
+        }
+      } else {
+        // hatching lines
+        const N = 14;
+        ctx.lineWidth = .7;
+        for (let i = 0; i < N; i++) {
+          const a  = .1 + r() * Math.PI * .8;
+          const d  = .64 + r() * .28;
+          const px = cx+Math.cos(a)*hw*d, py = cy+Math.sin(a)*hh*d;
+          skLine(px, py, px+(r()-.5)*3, py+3+r()*5, r); ctx.stroke();
+        }
+      }
+    }
+
+    /* — neck / bowtie (40%) — */
+    ctx.strokeStyle = INK; ctx.fillStyle = INK; ctx.lineWidth = 1;
+    if (r() < .4) {
+      const botY = cy + hh;
+      const nw   = hw * .22;
+      skLine(cx-nw, botY, cx-nw, botY+sz*.07, r); ctx.stroke();
+      skLine(cx+nw, botY, cx+nw, botY+sz*.07, r); ctx.stroke();
+      skLine(cx-hw*.9, botY+sz*.07, cx+hw*.9, botY+sz*.07, r); ctx.stroke();
+      // bowtie (30% of those with a neck)
+      if (r() < .3) {
+        const by = botY + sz * .033;
+        ctx.beginPath(); ctx.moveTo(cx,by); ctx.lineTo(cx-sz*.058,by-sz*.023); ctx.lineTo(cx-sz*.058,by+sz*.023); ctx.closePath(); ctx.fill();
+        ctx.beginPath(); ctx.moveTo(cx,by); ctx.lineTo(cx+sz*.058,by-sz*.023); ctx.lineTo(cx+sz*.058,by+sz*.023); ctx.closePath(); ctx.fill();
+      }
+    }
+
+    ctx.restore();
+  }
+
+  /* ── Render full canvas ────────────────────────────────────── */
+  function render() {
+    const W = canvas.width, H = canvas.height;
+
+    // Warm parchment fill
+    ctx.fillStyle = '#e0d8cb';
+    ctx.fillRect(0, 0, W, H);
+
+    // Paper grain texture
+    const tex = mkRng(999);
+    ctx.fillStyle = 'rgba(160,140,110,.11)';
+    for (let i = 0; i < 7000; i++) {
+      ctx.beginPath();
+      ctx.arc(tex()*W, tex()*H, .4+tex()*.5, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // Grid of faces
+    const sz     = Math.max(62, Math.min(105, Math.min(W, H) * .1));
+    const cellW  = sz * 1.52;
+    const cellH  = sz * 1.68;
+    const cols   = Math.ceil(W / cellW) + 2;
+    const rows   = Math.ceil(H / cellH) + 2;
+    const offRng = mkRng(137);
+    let seed = 1;
+
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const ox = (offRng() - .5) * cellW * .2;
+        const oy = (offRng() - .5) * cellH * .2;
+        const x  = (col - .5) * cellW + ox;
+        const y  = (row - .5) * cellH + oy;
+        drawFace(x, y, sz, seed++);
+      }
+    }
+  }
+
+  function resize() {
+    canvas.width  = window.innerWidth;
+    canvas.height = window.innerHeight;
+    render();
+  }
+
+  window.addEventListener('resize', resize);
+  resize();
+})();
+</script>
+</body>
+</html>
