@@ -16,9 +16,9 @@ export const site = {
     /** small line above the name; leave empty for none */
     eyebrow: '',
     /** Plain text with [label](href) links. */
-    lede: 'I build software and machine learning systems. Until October 2026 I led development at [Beespenser](#experience), building the desktop app that drives its circuit-board dispensing machine. Now I am a PhD student in Computer Science and Engineering at [Sabancı University](#research), working on generative models for drug design.',
+    lede: 'I build software and machine learning systems. I led software development at [Beespenser](#experience), building the desktop app that drives the fast prototyping device. Now I am a PhD student in Computer Science and Engineering at [Sabancı University](#research), working on generative models for drug design.',
     bridge:
-      'Off the clock I [take photographs](#photography), [act in and direct musicals](#stage), [sing with my band and teach singing](#music), and [film and grade its videos](#video).',
+      'Off the clock I [take photographs](#photography), [act in musicals](#stage), [make music](#music), and [film videos](#video).',
   },
 
   /** Shown as labelled rows in Contact. Assembled in the browser to keep scrapers out. */
