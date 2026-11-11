@@ -77,5 +77,6 @@ Pushing to `main` runs `.github/workflows/deploy.yml`. One-time setting: reposit
 ## Notes
 
 - The hero face is drawn by the sketch engine from the first version of this site (`src/scripts/sketch-engine.js`). A new face is drawn on every visit; click it to draw another.
+- The favicon is one fixed face from the same engine (seed 4717), drawn with a thicker pen so it reads at 16 px: `public/favicon.ico`, `icon-32.png`, `icon-192.png` and `apple-touch-icon.png`.
 - Nothing loads from third parties until a visitor asks: fonts are self-hosted, YouTube loads only when play is pressed, and Instagram is a plain link.
 - Vocabulary is in `CONTEXT.md`; decisions are in `docs/adr/`.

@@ -27,6 +27,7 @@ function mkRng(seed) {
 
 let R  = Math.random;   // active random stream — swapped per doodle
 let SC = 1;             // active pen scale — tracks doodle size
+let PEN = 1;            // stroke-width multiplier for tiny icons; never touches the RNG
 
 const rnd    = (a, b) => a + R() * (b - a);
 const pick   = a => a[(R() * a.length) | 0];
@@ -99,7 +100,7 @@ function ink(pts, o) {
   o = o || {};
   const passes = o.passes == null ? 2 : o.passes;
   const amt    = (o.j == null ? 1 : o.j) * SC;
-  const w      = (o.w == null ? 1.15 : o.w) * SC;
+  const w      = (o.w == null ? 1.15 : o.w) * SC * PEN;
   const base   = o.a == null ? 1 : o.a;
   ctx.strokeStyle = o.c || INK;
   for (let k = 0; k < passes; k++) {
@@ -966,11 +967,12 @@ export function randomSeed() {
  * transform already includes the device pixel ratio.
  * kind: 'human' (default) or one of the animals, for easter eggs.
  */
-export function drawFace(context, { seed, size, cx, cy, kind = 'human' }) {
+export function drawFace(context, { seed, size, cx, cy, kind = 'human', pen = 1 }) {
   const kinds = { human, cat, fox, dog, mouse, deer, bear, ant, butterfly };
   ctx = context;
   R = mkRng(seed);
   SC = Math.max(.72, Math.min(1.45, size / 96));
+  PEN = pen;
   ctx.save();
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
@@ -978,5 +980,6 @@ export function drawFace(context, { seed, size, cx, cy, kind = 'human' }) {
   ctx.rotate(rnd(-.06, .06));
   (kinds[kind] || human)(size);
   ctx.restore();
+  PEN = 1;
   ctx.globalAlpha = 1;
 }
