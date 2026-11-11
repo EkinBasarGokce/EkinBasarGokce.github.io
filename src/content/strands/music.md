@@ -5,7 +5,7 @@ hue: amber
 order: 30
 logo: ../../assets/eksi/eksi-logo.png
 logoAlt: The Eksi logo, white block letters with two cartoon band members on navy
-media: [cards]
+media: [photos, cards]
 links:
   - { label: "Eksi on YouTube", href: "https://www.youtube.com/@eksimusik" }
 ---

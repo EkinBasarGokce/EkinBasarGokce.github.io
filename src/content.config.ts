@@ -138,6 +138,10 @@ const photos = defineCollection({
     alt: z.string(),
     caption: z.string().optional(),
     year: z.string().optional(),
+    /** photographer credit: shows "With the courtesy of <credit>"; "" shows the line with the name left open */
+    credit: z.string().optional(),
+    /** lower comes first; photos without an order follow */
+    order: z.number().optional(),
     /** also show on the home page teaser */
     home: z.boolean().default(false),
   }),

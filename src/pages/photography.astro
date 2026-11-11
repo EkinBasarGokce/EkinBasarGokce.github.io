@@ -3,7 +3,7 @@
 import { Picture, getImage } from 'astro:assets';
 import Page from '../layouts/Page.astro';
 import Lightbox from '../components/Lightbox.astro';
-import { getPhotos } from '../lib/photos';
+import { getPhotos, photoLine } from '../lib/photos';
 
 const photos = (await getPhotos()).filter((p) => p.strand === 'photography');
 const items = await Promise.all(
@@ -20,7 +20,7 @@ const items = await Promise.all(
     <ul class="gallery" role="list">
       {items.map(({ p, full }, i) => (
         <li>
-          <a href={full.src} data-lightbox data-alt={p.alt} data-caption={[p.caption, p.year].filter(Boolean).join(' · ')}>
+          <a href={full.src} data-lightbox data-alt={p.alt} data-caption={photoLine(p)}>
             <Picture
               src={p.src}
               alt={p.alt}
@@ -30,7 +30,7 @@ const items = await Promise.all(
               loading={i < 4 ? 'eager' : 'lazy'}
             />
           </a>
-          {(p.caption || p.year) && <p class="small muted cap">{[p.caption, p.year].filter(Boolean).join(' · ')}</p>}
+          {photoLine(p) && <p class="small muted cap">{photoLine(p)}</p>}
         </li>
       ))}
     </ul>

@@ -6,7 +6,7 @@ import Text from './Text.astro';
 import Video from './Video.astro';
 import LinkCard from './LinkCard.astro';
 import InstagramBadge from './InstagramBadge.astro';
-import { getStrandPhotos } from '../lib/photos';
+import { getStrandPhotos, photoLine } from '../lib/photos';
 
 interface Props {
   strand: CollectionEntry<'strands'>;
@@ -58,37 +58,50 @@ const external = (href: string) => /^https?:\/\//.test(href);
       </ul>
     )}
 
-    {wants('photos') && (
-      photos.length > 0 ? (
-        <ul class="photos reveal" role="list">
-          {photos.map(({ p, full }) => (
-            <li>
-              <a href={full.src} data-lightbox data-alt={p.alt} data-caption={[p.caption, p.year].filter(Boolean).join(' · ')}>
-                <Picture src={p.src} alt={p.alt} formats={['avif', 'webp']} widths={[320, 640, 960]} sizes="(min-width: 64rem) 16rem, (min-width: 40rem) 30vw, 46vw" />
-              </a>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        d.placeholder && <p class="soon">{d.placeholder}</p>
-      )
+    {wants('photos') && photos.length === 0 && d.placeholder && <p class="soon">{d.placeholder}</p>}
+
+    {(photos.length > 0 || cards.length > 0) && (
+      <div class="media-row">
+        {photos.length > 0 && (
+          <ul
+            class:list={['photos', 'reveal', { single: photos.length === 1 }]}
+            data-orient={photos.length === 1 ? (photos[0].p.src.width >= photos[0].p.src.height ? 'landscape' : 'portrait') : undefined}
+            role="list"
+          >
+            {photos.map(({ p, full }) => (
+              <li>
+                <a href={full.src} data-lightbox data-alt={p.alt} data-caption={photoLine(p)}>
+                  <Picture
+                    src={p.src}
+                    alt={p.alt}
+                    formats={['avif', 'webp']}
+                    widths={[320, 640, 960]}
+                    sizes={photos.length === 1 ? '(min-width: 40rem) 30rem, 100vw' : '(min-width: 64rem) 16rem, (min-width: 40rem) 30vw, 46vw'}
+                  />
+                </a>
+                {photoLine(p) && <p class="cap small muted">{photoLine(p)}</p>}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {cards.length > 0 && (
+          <div class="cards">
+            {cards.map((c) =>
+              c.data.style === 'badge' && c.data.platform === 'instagram' ? (
+                <InstagramBadge name={c.data.label} handle={c.data.sub ?? ''} href={c.data.href} avatar={d.logo} avatarAlt={d.logoAlt} tiles={c.data.tiles} />
+              ) : (
+                <LinkCard label={c.data.label} sub={c.data.sub} href={c.data.href} platform={c.data.platform} />
+              ),
+            )}
+          </div>
+        )}
+      </div>
     )}
 
     {videos.length > 0 && (
       <div class="videos">
         {videos.map((v) => <Video id={v.id} title={v.data.title} role={v.data.role} year={v.data.year} start={v.data.start} />)}
-      </div>
-    )}
-
-    {cards.length > 0 && (
-      <div class="cards">
-        {cards.map((c) =>
-          c.data.style === 'badge' && c.data.platform === 'instagram' ? (
-            <InstagramBadge name={c.data.label} handle={c.data.sub ?? ''} href={c.data.href} avatar={d.logo} avatarAlt={d.logoAlt} tiles={c.data.tiles} />
-          ) : (
-            <LinkCard label={c.data.label} sub={c.data.sub} href={c.data.href} platform={c.data.platform} />
-          ),
-        )}
       </div>
     )}
 
@@ -146,6 +159,19 @@ const external = (href: string) => /^https?:\/\//.test(href);
     gap: var(--space-2xs);
   }
   .photos a { display: block; border-radius: 0.5rem; overflow: hidden; aspect-ratio: 4 / 5; background: var(--paper-2); }
+  .cap { margin-top: 0.35rem; }
+  /* a lone photo keeps its own shape instead of the 4:5 crop */
+  .photos.single { display: block; }
+  .photos.single[data-orient='portrait'] { width: min(100%, 17rem); }
+  .photos.single[data-orient='landscape'] { width: min(100%, 30rem); }
+  .photos.single a { aspect-ratio: auto; }
+  .photos :global(picture) { display: block; height: 100%; }
+  .photos.single :global(picture),
+  .photos.single :global(img) { height: auto; }
+  .media-row { display: flex; flex-wrap: wrap; gap: var(--space-m); align-items: flex-start; }
+  .media-row > .photos { flex: 1 1 100%; }
+  .media-row > .photos.single { flex: 0 0 auto; }
+  .media-row > .cards { flex: 1 1 18rem; max-width: 26rem; }
   .photos :global(img) { width: 100%; height: 100%; object-fit: cover; transition: scale 0.5s var(--ease-out); }
   @media (hover: hover) and (pointer: fine) {
     .photos a:hover :global(img) { scale: 1.04; }

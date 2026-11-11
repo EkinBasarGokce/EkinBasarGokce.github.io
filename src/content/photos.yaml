@@ -1,15 +1,40 @@
 # Photos live in src/assets/photos/. Files directly in that folder belong to
 # Photography (and the /photography/ page). Files in a subfolder named after a
-# strand belong to that strand, e.g. src/assets/photos/stage/ for Stage.
+# strand belong to that strand: photos/stage/ for Stage, photos/music/ for Music.
 #
-# Listing a photo here is optional; it sets order, description and caption.
-# file is the path inside src/assets/photos/. home: true picks the (up to six)
-# photos shown on the home page for that strand; otherwise the first six show.
-#
-# - id: spamalot-1
-#   file: stage/spamalot-1.jpg
-#   alt: "Knights mid-song on stage in Spamalot"
-#   caption: "Spamalot, Company Musicals"
-#   year: "2019"
-#   home: true
-[]
+# Listing a photo here is optional; it sets the description read out by
+# screen readers (alt), the order, and the line under it:
+#   order    lower comes first
+#   caption  short text, e.g. the play
+#   credit   "With the courtesy of <credit>"; "" keeps the line with the name open
+#   home     true picks the (up to six) photos shown on the home page for that strand
+
+# Stage
+- id: spamalot
+  order: 10
+  file: stage/spamalot.jpg
+  alt: Spamalot on stage, actors in knight costumes under blue light
+  credit: ""
+- id: gasteciler-1
+  order: 20
+  file: stage/gasteciler-1.jpg
+  alt: Gasteciler, a newsboy in a flat cap and braces sings at a railing
+  caption: Gasteciler
+- id: gasteciler-2
+  order: 30
+  file: stage/gasteciler-2.jpg
+  alt: Gasteciler, a newsboy in a flat cap sits on a railing, reading
+  caption: Gasteciler
+
+# Music
+- id: eksi-live
+  order: 10
+  file: music/eksi-live.jpg
+  alt: Eksi live, two singers at microphones in blue stage light and haze
+  credit: ""
+
+# Photography
+- id: old-analog
+  order: 10
+  file: old-analog.jpg
+  alt: Analog photograph of three friends in a park under willow trees

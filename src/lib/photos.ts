@@ -22,8 +22,16 @@ export interface Photo {
   alt: string;
   caption?: string;
   year?: string;
+  credit?: string;
+  order?: number;
   home: boolean;
   src: ImageMetadata;
+}
+
+/** The line shown under a photo and in the lightbox: caption, year, credit. */
+export function photoLine(p: Photo): string {
+  const credit = p.credit === undefined ? '' : `With the courtesy of ${p.credit.trim() || '…'}`;
+  return [p.caption, p.year, credit].filter(Boolean).join(' · ');
 }
 
 const strandOf = (file: string) => (file.includes('/') ? file.split('/')[0] : 'photography');
@@ -40,6 +48,7 @@ export async function getPhotos(): Promise<Photo[]> {
     }
     return { id: e.id, ...e.data, strand: strandOf(e.data.file), src };
   });
+  listed.sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity));
   const named = new Set(entries.map((e) => e.data.file));
   const extra: Photo[] = [...byName]
     .filter(([name]) => !named.has(name))
