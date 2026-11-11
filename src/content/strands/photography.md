@@ -7,8 +7,7 @@ media: [photos]
 placeholder: I'll add my photographs here soon.
 more: { label: All photographs, href: /photography/ }
 entries:
-  - title: Darkroom
-    role: Member
+  - title: Member
     when: "2016 – 2022"
     detail: AFT, Amatör Fotoğrafçılık Topluluğu (METU's amateur photography society)
 ---
