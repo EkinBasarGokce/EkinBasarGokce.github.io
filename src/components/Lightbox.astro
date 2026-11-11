@@ -1,0 +1,38 @@
+---
+/** One native <dialog> lightbox per page; any <a data-lightbox> on the page opens in it. */
+---
+
+<dialog class="lightbox" data-lightbox-dialog aria-label="Photograph">
+  <figure>
+    <img alt="" />
+    <figcaption class="small"></figcaption>
+  </figure>
+  <div class="controls">
+    <button type="button" class="btn" data-prev aria-label="Previous photograph">←</button>
+    <button type="button" class="btn" data-close>Close</button>
+    <button type="button" class="btn" data-next aria-label="Next photograph">→</button>
+  </div>
+</dialog>
+
+<style>
+  .lightbox {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: var(--space-m);
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    display: none;
+  }
+  .lightbox[open] { display: grid; grid-template-rows: 1fr auto; place-items: center; gap: var(--space-s); }
+  .lightbox::backdrop { background: color-mix(in srgb, var(--paper) 90%, transparent); }
+  figure { display: grid; gap: var(--space-2xs); justify-items: center; min-height: 0; max-height: 100%; }
+  img { max-width: min(100%, 1600px); max-height: calc(100dvh - 9rem); object-fit: contain; border-radius: 0.4rem; box-shadow: 0 20px 60px rgb(60 40 80 / 0.25); }
+  .controls { display: flex; gap: var(--space-xs); }
+  @media (prefers-reduced-motion: no-preference) {
+    .lightbox[open] img { animation: enter 0.35s var(--ease-out); }
+  }
+</style>

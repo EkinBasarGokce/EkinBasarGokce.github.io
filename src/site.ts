@@ -7,30 +7,30 @@ export const site = {
   name: 'Ekin Başar Gökçe',
   shortName: 'Ekin B. Gökçe',
   url: 'https://ekinbasargokce.github.io',
-  title: 'Ekin Başar Gökçe · Lead Developer and PhD researcher',
+  title: 'Ekin Başar Gökçe · Engineer and PhD researcher',
   description:
-    'Lead Developer at Beespenser and PhD student in Computer Science and Engineering at Sabancı University, working on generative drug design. Also photography, musical theatre, a band and its videos.',
+    'Engineer and PhD student in Computer Science and Engineering at Sabancı University, working on generative drug design. Former Lead Developer at Beespenser. Also photography, musical theatre, a band and its videos.',
   location: 'İstanbul, Türkiye',
 
   hero: {
-    eyebrow: 'Lead Developer · PhD student',
+    eyebrow: 'Engineer · PhD student',
     /** Plain text with [label](href) links. */
-    lede: 'I lead development at [Beespenser](#experience), building the software that drives our circuit-board dispensing machine. I am also a PhD student in Computer Science and Engineering at [Sabancı University](#research), working on generative models for drug design.',
+    lede: 'I build software and machine learning systems. Until October 2026 I led development at [Beespenser](#experience), building the desktop app that drives its circuit-board dispensing machine. Now I am a PhD student in Computer Science and Engineering at [Sabancı University](#research), working on generative models for drug design.',
     bridge:
-      'Off the clock I [take photographs](#photography), [act in and direct musicals](#stage), [sing with a band and teach singing](#music), and [film and grade its videos](#video).',
+      'Off the clock I [take photographs](#photography), [act in and direct musicals](#stage), [sing with my band and teach singing](#music), and [film and grade its videos](#video).',
   },
 
   /** Shown as labelled rows in Contact. Assembled in the browser to keep scrapers out. */
   emails: [
-    { label: 'Academic inquiries', address: 'TODO: your Sabancı address' },
-    { label: 'Everything else', address: 'TODO: your personal address' },
+    { label: 'Academic inquiries', address: 'basar.gokce@sabanciuniv.edu' },
+    { label: 'Everything else', address: 'basargokce@gmail.com' },
   ],
 
   /** Shown in the hero link row and in Contact, in this order. */
   socials: [
     { label: 'GitHub', href: 'https://github.com/EkinBasarGokce' },
-    { label: 'LinkedIn', href: 'TODO: LinkedIn profile URL' },
-    { label: 'Instagram', href: 'TODO: personal Instagram URL' },
+    { label: 'LinkedIn', href: 'https://www.linkedin.com/in/ekin-basar-gokce/' },
+    { label: 'Instagram', href: 'https://www.instagram.com/metallician/' },
     // { label: 'Google Scholar', href: 'https://scholar.google.com/citations?user=...' },
     // { label: 'ORCID', href: 'https://orcid.org/0000-...' },
   ],

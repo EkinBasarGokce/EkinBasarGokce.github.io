@@ -1,10 +1,10 @@
 ---
-title: Lung cancer image classification
-summary: Team project that classifies lung cancer types from histopathology images with deep learning.
-tags: [PyTorch, Computer vision]
+title: Lung cancer detection
+summary: Team computer vision project classifying lung cancer tumour images. I worked on data visualisation and on training models to improve detection accuracy.
+year: "2022"
+tags: [Computer vision, Deep learning]
 links:
   - { label: Repo, href: "https://github.com/EkinBasarGokce/Lung-Cancer-Image-Classification-Project" }
-hue: coral
-order: 50
-draft: false
+hue: mauve
+order: 70
 ---

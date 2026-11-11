@@ -1,3 +1,15 @@
-# One entry per photo in src/assets/photos/. Order here = order in the gallery.
-# home: true also shows it in the home-page teaser (pick 6).
+# Photos live in src/assets/photos/. Files directly in that folder belong to
+# Photography (and the /photography/ page). Files in a subfolder named after a
+# strand belong to that strand, e.g. src/assets/photos/stage/ for Stage.
+#
+# Listing a photo here is optional; it sets order, description and caption.
+# file is the path inside src/assets/photos/. home: true picks the (up to six)
+# photos shown on the home page for that strand; otherwise the first six show.
+#
+# - id: spamalot-1
+#   file: stage/spamalot-1.jpg
+#   alt: "Knights mid-song on stage in Spamalot"
+#   caption: "Spamalot, Company Musicals"
+#   year: "2019"
+#   home: true
 []

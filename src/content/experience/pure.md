@@ -5,7 +5,9 @@ location: İstanbul
 kind: internship
 roles:
   - title: Research Intern
+    start: "2020"
+    end: "2020"
 tags: []
-order: 50
+order: 70
 ---
 - TODO: one line on the PURE project.

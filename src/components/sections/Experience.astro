@@ -46,7 +46,7 @@ const rows = await Promise.all(items.map(async (e) => ({ e, Content: (await rend
                 {d.roles.map((r) => (
                   <li>
                     <span>{r.title}</span>
-                    <span class="muted tnum">{span(r.start, r.end)}</span>
+                    {r.start && <span class="muted tnum">{span(r.start, r.end)}</span>}
                   </li>
                 ))}
               </ol>

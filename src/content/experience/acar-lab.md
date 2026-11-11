@@ -6,6 +6,6 @@ kind: research
 roles:
   - title: Undergraduate Researcher
 tags: []
-order: 30
+order: 50
 ---
-- TODO: one line on what you worked on in the lab.
+- TODO: one line on what you worked on in the lab, and the years.

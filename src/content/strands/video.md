@@ -5,4 +5,4 @@ hue: mauve
 order: 40
 media: [videos]
 ---
-I make the band's videos from start to finish: I shoot them, cut them, and grade the colour in DaVinci Resolve.
+I make the videos for my band, Eksi: I shoot them, cut them, and grade the colour in DaVinci Resolve.

@@ -1,11 +1,13 @@
 ---
 org: Technical University of Munich (TUM)
-unit: Chair of Proteomics and Bioanalytics
+unit: Chair of Proteomics and Bioanalytics · ERASMUS+
 location: Munich
 kind: internship
 roles:
   - title: Research Intern
-tags: [Python, Jupyter]
-order: 40
+    start: "2021"
+    end: "2021"
+tags: [Deep learning, Proteomics, Python]
+order: 60
 ---
-- TODO: one line on the internship project.
+- Fine-tuned Prosit, a deep neural network for proteomics, with refinement learning: data cleaning, data preparation and model training.

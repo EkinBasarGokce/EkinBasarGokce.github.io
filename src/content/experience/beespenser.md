@@ -1,13 +1,15 @@
 ---
-org: Beespenser
+org: Beespenser Technology Inc.
 location: İstanbul
 kind: industry
 roles:
   - title: Lead Developer
-    end: present
+    end: 2026-10
   - title: Full Stack Engineer
-tags: [Tauri, React, FastAPI, Python, LLM agents]
+    start: "2025"
+tags: [Tauri, React, FastAPI, Node.js, Rust, SQLite]
 order: 10
 ---
-- Lead the desktop app that turns circuit-board design files into toolpaths and drives the Beespenser machine for dispensing, solder paste, drilling and reflow.
-- Built the full stack as Full Stack Engineer before moving up: React interface, Python backend, machine communication, signed Windows releases with in-app updates.
+- Built the BeeSpenser desktop app end to end: a Tauri app with a React and Vite frontend, a FastAPI backend and a Node.js sidecar, run by a Rust host process that manages the sidecars and the serial connection.
+- The backend streams G-code to Marlin firmware in real time with WebSocket telemetry, and includes a geometry engine with alignment and surface following.
+- Kept the architecture documented with decision records and a glossary, on a versioned SQLite store.

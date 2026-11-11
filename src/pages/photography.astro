@@ -1,10 +1,11 @@
 ---
-/** Full gallery: every photo in src/assets/photos/, masonry columns, native <dialog> lightbox. */
+/** Full gallery: every photo directly in src/assets/photos/, masonry columns, native <dialog> lightbox. */
 import { Picture, getImage } from 'astro:assets';
 import Page from '../layouts/Page.astro';
+import Lightbox from '../components/Lightbox.astro';
 import { getPhotos } from '../lib/photos';
 
-const photos = await getPhotos();
+const photos = (await getPhotos()).filter((p) => p.strand === 'photography');
 const items = await Promise.all(
   photos.map(async (p) => ({ p, full: await getImage({ src: p.src, width: Math.min(2000, p.src.width), format: 'webp' }) })),
 );
@@ -34,20 +35,10 @@ const items = await Promise.all(
       ))}
     </ul>
   ) : (
-    <p class="empty"><span class="todo">Drop photos into src/assets/photos/ and they appear here, newest captions from photos.yaml.</span></p>
+    <p class="empty"><span class="todo">Drop photos into src/assets/photos/ and they appear here, with captions from photos.yaml.</span></p>
   )}
 
-  <dialog class="lightbox" data-lightbox-dialog aria-label="Photograph">
-    <figure>
-      <img alt="" />
-      <figcaption class="small"></figcaption>
-    </figure>
-    <div class="controls">
-      <button type="button" class="btn" data-prev aria-label="Previous photograph">←</button>
-      <button type="button" class="btn" data-close>Close</button>
-      <button type="button" class="btn" data-next aria-label="Next photograph">→</button>
-    </div>
-  </dialog>
+  <Lightbox />
 </Page>
 
 <style>
@@ -65,25 +56,4 @@ const items = await Promise.all(
     .gallery a:hover :global(img) { scale: 1.03; }
   }
   .cap { margin-top: var(--space-3xs); }
-
-  .lightbox {
-    width: 100vw;
-    height: 100dvh;
-    max-width: none;
-    max-height: none;
-    margin: 0;
-    padding: var(--space-m);
-    border: 0;
-    background: transparent;
-    color: var(--ink);
-    display: none;
-  }
-  .lightbox[open] { display: grid; grid-template-rows: 1fr auto; place-items: center; gap: var(--space-s); }
-  .lightbox::backdrop { background: color-mix(in srgb, var(--paper) 90%, transparent); }
-  .lightbox figure { display: grid; gap: var(--space-2xs); justify-items: center; min-height: 0; max-height: 100%; }
-  .lightbox img { max-width: min(100%, 1600px); max-height: calc(100dvh - 9rem); object-fit: contain; border-radius: 0.4rem; box-shadow: 0 20px 60px rgb(60 40 80 / 0.25); }
-  .controls { display: flex; gap: var(--space-xs); }
-  @media (prefers-reduced-motion: no-preference) {
-    .lightbox[open] img { animation: enter 0.35s var(--ease-out); }
-  }
 </style>

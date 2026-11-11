@@ -6,6 +6,7 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import Section from '../Section.astro';
 import Strand from '../Strand.astro';
+import Lightbox from '../Lightbox.astro';
 
 interface Props {
   entry: CollectionEntry<'sections'>;
@@ -28,6 +29,7 @@ const strands = (await getCollection('strands', (s) => !s.data.draft)).sort((a, 
     </nav>
     {strands.map((s) => <Strand strand={s} />)}
   </div>
+  <Lightbox />
 </Section>
 
 <style>

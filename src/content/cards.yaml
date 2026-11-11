@@ -1,7 +1,7 @@
 # Link-out cards shown inside a strand. No Instagram script is loaded.
 - id: band-instagram
-  label: "TODO: band name"
-  sub: "TODO: @bandhandle"
-  href: "https://www.instagram.com/"
+  label: Eksi
+  sub: "@eksidegileksi on Instagram"
+  href: "https://www.instagram.com/eksidegileksi/"
   platform: instagram
   strand: music

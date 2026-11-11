@@ -33,7 +33,7 @@ const experience = defineCollection({
     orgUrl: z.string().optional(),
     unit: z.string().optional(), // lab, chair or programme inside the org
     location: z.string().optional(),
-    kind: z.enum(['industry', 'research', 'internship']),
+    kind: z.enum(['industry', 'research', 'teaching', 'internship']),
     /** newest role first; two roles = a promotion inside one org */
     roles: z
       .array(z.object({ title: z.string(), start: when.optional(), end: when.optional() }))

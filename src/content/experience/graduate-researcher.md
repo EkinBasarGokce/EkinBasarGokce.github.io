@@ -1,11 +1,14 @@
 ---
 org: Sabancı University
-unit: "TODO: lab or group name"
+unit: MSc in Data Science
 location: İstanbul
 kind: research
 roles:
   - title: Graduate Researcher
-tags: []
-order: 20
+    start: "2023"
+    end: "2026"
+tags: [Chemical language models, Fine-tuning, Generative models]
+order: 30
 ---
-- TODO: one line on the research topic you worked on during your MSc in Data Science.
+- Thesis: *Generating Synergistic Drug Partners Using Chemical Language Models*.
+- Fine-tuned chemical language models to steer conditional generation toward the desired region of the training space, designing molecules with desired properties.

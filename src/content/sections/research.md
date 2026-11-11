@@ -6,12 +6,15 @@ order: 30
 kind: research
 hue: mauve
 ---
-My PhD research is on generative drug design: using deep generative models to propose new small molecules and to steer them toward the properties a drug needs, such as binding a protein target, being drug-like, and being possible to make.
+My research is on generative drug design: using deep generative models to propose new molecules and to steer them toward the properties a drug needs.
 
-TODO: add a few sentences on your approach and current project.
+For my MSc thesis, *Generating Synergistic Drug Partners Using Chemical Language Models*, I fine-tuned chemical language models to steer conditional generation toward drug partners that work well together. My PhD at Sabancı University continues this line of work.
 
-- Generative models for molecules
-- Language models for chemistry
-- Parameter-efficient fine-tuning
-- Multi-objective optimisation
+TODO: add a few sentences on your PhD direction and current project.
+
+- Generative drug design
+- Chemical language models
+- Drug synergy
+- Fine-tuning and PEFT
+- Drug–target interaction
 - Agentic research workflows

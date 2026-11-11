@@ -9,16 +9,19 @@ updated: November 2026
 
 A [now page](https://nownownow.com/about): what I am focused on at this point in my life. If you are reading this long after the date above, I have probably moved on to something else.
 
-## Work
-
-- Leading development of the Beespenser desktop app.
-- TODO: one line on what you are building or shipping this season.
-
 ## Research
 
-- Starting my PhD at Sabancı University on generative drug design.
+- Starting my PhD at Sabancı University, building on my MSc thesis on generating synergistic drug partners with chemical language models.
 - TODO: what you are reading or experimenting with.
+
+## Teaching
+
+- Teaching assistant at Sabancı University, on courses covering large language models, machine learning and big data.
+
+## Work
+
+- Wrapped up at Beespenser in October 2026, after leading its desktop app from the first line of code.
 
 ## Off the clock
 
-- TODO: the band's current project, a show you are working on, or what you are photographing.
+- TODO: what Eksi is working on, a show you are part of, or what you are photographing.

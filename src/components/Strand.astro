@@ -1,11 +1,11 @@
 ---
 /** One creative practice inside Off the clock. Everything comes from its .md file. */
 import { getCollection, render, type CollectionEntry } from 'astro:content';
-import { Picture } from 'astro:assets';
+import { Picture, getImage } from 'astro:assets';
 import Text from './Text.astro';
 import Video from './Video.astro';
 import LinkCard from './LinkCard.astro';
-import { getPhotos } from '../lib/photos';
+import { getStrandPhotos } from '../lib/photos';
 
 interface Props {
   strand: CollectionEntry<'strands'>;
@@ -15,7 +15,15 @@ const d = strand.data;
 const { Content } = await render(strand);
 
 const wants = (m: 'photos' | 'videos' | 'cards') => d.media.includes(m);
-const photos = wants('photos') ? (await getPhotos()).filter((p) => p.home).slice(0, 6) : [];
+const photos = wants('photos')
+  ? await Promise.all(
+      (await getStrandPhotos(strand.id)).map(async (p) => ({
+        p,
+        full: await getImage({ src: p.src, width: Math.min(2000, p.src.width), format: 'webp' }),
+      })),
+    )
+  : [];
+const folder = strand.id === 'photography' ? 'src/assets/photos/' : `src/assets/photos/${strand.id}/`;
 const videos = wants('videos') ? await getCollection('videos', (v) => v.data.strand === strand.id) : [];
 const cards = wants('cards') ? await getCollection('cards', (c) => c.data.strand === strand.id) : [];
 ---
@@ -50,16 +58,16 @@ const cards = wants('cards') ? await getCollection('cards', (c) => c.data.strand
     {wants('photos') && (
       photos.length > 0 ? (
         <ul class="photos reveal" role="list">
-          {photos.map((p) => (
+          {photos.map(({ p, full }) => (
             <li>
-              <a href="/photography/" aria-label={`${p.alt}. Open the photography page`}>
+              <a href={full.src} data-lightbox data-alt={p.alt} data-caption={[p.caption, p.year].filter(Boolean).join(' · ')}>
                 <Picture src={p.src} alt={p.alt} formats={['avif', 'webp']} widths={[320, 640, 960]} sizes="(min-width: 64rem) 16rem, (min-width: 40rem) 30vw, 46vw" />
               </a>
             </li>
           ))}
         </ul>
       ) : (
-        <p class="small"><span class="todo">Add photos to src/assets/photos/ and mark six with home: true in photos.yaml</span></p>
+        <p class="small"><span class="todo">Add photos to {folder}</span></p>
       )
     )}
 
