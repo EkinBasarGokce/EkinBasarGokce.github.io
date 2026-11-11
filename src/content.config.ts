@@ -99,7 +99,7 @@ const publications = defineCollection({
 /** One creative practice inside "Off the clock". */
 const strands = defineCollection({
   loader: glob({ pattern: '*.md', base: './src/content/strands' }),
-  schema: z.object({
+  schema: ({ image }) => z.object({
     title: z.string(),
     kicker: z.string(), // one line under the title
     hue,
@@ -121,6 +121,11 @@ const strands = defineCollection({
     media: z.array(z.enum(['photos', 'videos', 'cards'])).default([]),
     /** a Page that holds the long form, e.g. "/photography/" */
     more: link.optional(),
+    /** shown while this strand's photos are still missing, e.g. "Photos coming soon." */
+    placeholder: z.string().optional(),
+    /** a logo (path relative to the .md file), used as the avatar of an Instagram badge */
+    logo: image().optional(),
+    logoAlt: z.string().optional(),
     draft: z.boolean().default(false),
   }),
 });
@@ -159,6 +164,10 @@ const cards = defineCollection({
     href: z.string(),
     platform: z.enum(['instagram', 'youtube', 'spotify', 'web']),
     strand: z.string(),
+    /** badge = a small Instagram-profile preview (avatar = the strand's logo) */
+    style: z.enum(['card', 'badge']).default('card'),
+    /** YouTube ids whose stills fill the badge's preview grid, after the logo */
+    tiles: z.array(z.string()).default([]),
   }),
 });
 

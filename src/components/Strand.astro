@@ -5,6 +5,7 @@ import { Picture, getImage } from 'astro:assets';
 import Text from './Text.astro';
 import Video from './Video.astro';
 import LinkCard from './LinkCard.astro';
+import InstagramBadge from './InstagramBadge.astro';
 import { getStrandPhotos } from '../lib/photos';
 
 interface Props {
@@ -23,9 +24,11 @@ const photos = wants('photos')
       })),
     )
   : [];
-const folder = strand.id === 'photography' ? 'src/assets/photos/' : `src/assets/photos/${strand.id}/`;
 const videos = wants('videos') ? await getCollection('videos', (v) => v.data.strand === strand.id) : [];
 const cards = wants('cards') ? await getCollection('cards', (c) => c.data.strand === strand.id) : [];
+// "All photographs" only makes sense once there are photographs
+const showMore = d.more && !(wants('photos') && photos.length === 0);
+const external = (href: string) => /^https?:\/\//.test(href);
 ---
 
 <article id={strand.id} class="strand" data-strand={strand.id} data-hue={d.hue} aria-labelledby={`${strand.id}-title`}>
@@ -42,12 +45,12 @@ const cards = wants('cards') ? await getCollection('cards', (c) => c.data.strand
       <ul class="ledger entries" role="list" data-stagger>
         {d.entries.map((e) => (
           <li class="reveal">
-            <p class="when">{e.when ? <Text value={e.when} /> : e.role}</p>
+            <p class="when">{e.when && <Text value={e.when} />}</p>
             <div>
               <p class="entry-title">
                 {e.href ? <a href={e.href}><Text value={e.title} /></a> : <Text value={e.title} />}
-                {e.when && e.role && <span class="muted"> · {e.role}</span>}
               </p>
+              {e.role && <p class="entry-role">{e.role}</p>}
               {e.detail && <p class="small muted"><Text value={e.detail} /></p>}
             </div>
           </li>
@@ -67,32 +70,40 @@ const cards = wants('cards') ? await getCollection('cards', (c) => c.data.strand
           ))}
         </ul>
       ) : (
-        <p class="small"><span class="todo">Add photos to {folder}</span></p>
+        d.placeholder && <p class="soon">{d.placeholder}</p>
       )
     )}
 
-    {wants('videos') && (
-      videos.length > 0 ? (
-        <div class="videos">
-          {videos.map((v) => <Video id={v.id} title={v.data.title} role={v.data.role} year={v.data.year} start={v.data.start} />)}
-        </div>
-      ) : (
-        <p class="small"><span class="todo">Add YouTube video ids to src/content/videos.yaml with strand: {strand.id}</span></p>
-      )
+    {videos.length > 0 && (
+      <div class="videos">
+        {videos.map((v) => <Video id={v.id} title={v.data.title} role={v.data.role} year={v.data.year} start={v.data.start} />)}
+      </div>
     )}
 
     {cards.length > 0 && (
       <div class="cards">
-        {cards.map((c) => <LinkCard label={c.data.label} sub={c.data.sub} href={c.data.href} platform={c.data.platform} />)}
+        {cards.map((c) =>
+          c.data.style === 'badge' && c.data.platform === 'instagram' ? (
+            <InstagramBadge name={c.data.label} handle={c.data.sub ?? ''} href={c.data.href} avatar={d.logo} avatarAlt={d.logoAlt} tiles={c.data.tiles} />
+          ) : (
+            <LinkCard label={c.data.label} sub={c.data.sub} href={c.data.href} platform={c.data.platform} />
+          ),
+        )}
       </div>
     )}
 
-    {(d.links.length > 0 || d.more) && (
+    {(d.links.length > 0 || showMore) && (
       <div class="out-row">
-        {d.more && <a class="btn" href={d.more.href}>{d.more.label} →</a>}
+        {showMore && d.more && <a class="btn" href={d.more.href}>{d.more.label} →</a>}
         {d.links.length > 0 && (
           <ul class="links small" role="list">
-            {d.links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+            {d.links.map((l) =>
+              external(l.href) ? (
+                <li><a class="out" href={l.href} target="_blank" rel="noopener">{l.label}</a></li>
+              ) : (
+                <li><a href={l.href}>{l.label}</a></li>
+              ),
+            )}
           </ul>
         )}
       </div>
@@ -124,6 +135,8 @@ const cards = wants('cards') ? await getCollection('cards', (c) => c.data.strand
   .entries { --ledger: 7.5rem; }
   .entries > li { padding-block: var(--space-xs); }
   .entry-title { font-weight: 500; }
+  .entry-role { font-size: var(--step--1); color: var(--hue-ink); margin-top: 0.1rem; }
+  .soon { color: var(--muted); font-style: italic; font-family: var(--font-display); font-variation-settings: 'SOFT' 100; }
 
   .photos {
     list-style: none;

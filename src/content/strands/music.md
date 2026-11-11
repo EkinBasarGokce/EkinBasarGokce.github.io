@@ -3,19 +3,12 @@ title: Music
 kicker: Eksi, and private singing lessons.
 hue: amber
 order: 30
+logo: ../../assets/eksi/eksi-logo.png
+logoAlt: The Eksi logo, white block letters with two cartoon band members on navy
 media: [cards]
-entries:
-  - title: Eksi
-    role: Band
-    detail: I sing in the band, and make its videos.
-    href: "https://www.instagram.com/eksidegileksi/"
-  - title: Private singing lessons
-    role: Teacher
-    detail: One-to-one voice lessons. Get in touch through the contact section.
-    href: "#contact"
 links:
-  - { label: "Watch the band's videos", href: "#video" }
+  - { label: "Eksi on YouTube", href: "https://www.youtube.com/@eksimusik" }
 ---
-I sing with my band, Eksi. Its videos are in Video, below; I make those too.
+I make music with my band, Eksi, and I make its videos too: you'll find them under Video, below.
 
-I also give private singing lessons.
+I also give private singing lessons. [Get in touch](#contact) if you'd like to learn.

@@ -4,6 +4,7 @@ kicker: Film, darkroom prints and the occasional digital frame.
 hue: periwinkle
 order: 10
 media: [photos]
+placeholder: I'll add my photographs here soon.
 more: { label: All photographs, href: /photography/ }
 entries:
   - title: Darkroom

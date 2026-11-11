@@ -1,10 +1,9 @@
 # id = the YouTube video id: youtube.com/watch?v=THIS_PART
 # strand: which Off the clock strand shows it (music or video)
+# optional: role (shown under the title), year, start (seconds)
 - id: OLYQllYu_RM
   title: Edalarda
   strand: video
-  role: Eksi · edit and colour grade
 - id: OhNxl5xLIpE
   title: Bosa Noga
   strand: video
-  role: Eksi · edit and colour grade

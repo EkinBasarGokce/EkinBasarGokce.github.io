@@ -1,7 +1,11 @@
-# Link-out cards shown inside a strand. No Instagram script is loaded.
+# Link-out cards shown inside a strand. Nothing loads from the platform.
+# style: badge draws a small Instagram-profile preview, using the strand's logo
+# as the avatar and the stills of the YouTube ids in `tiles` as the grid.
 - id: band-instagram
   label: Eksi
-  sub: "@eksidegileksi on Instagram"
+  sub: "@eksidegileksi"
   href: "https://www.instagram.com/eksidegileksi/"
   platform: instagram
   strand: music
+  style: badge
+  tiles: [OLYQllYu_RM, OhNxl5xLIpE]

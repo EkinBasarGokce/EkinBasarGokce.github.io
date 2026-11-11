@@ -53,7 +53,7 @@ _Avoid_: hobby, sub-section, category
 The strand for photographs taken by Ekin and the darkroom work at AFT (Amatör Fotoğrafçılık Topluluğu, METU).
 
 **Stage**:
-The strand for musical theatre with Company Musicals (METU) as actor, assistant director and director.
+The strand for musical theatre with The Company Musicals (METU) as actor, assistant director and director.
 _Avoid_: theatre, drama
 
 **Music**:

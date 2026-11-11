@@ -13,7 +13,6 @@ const reduce = matchMedia('(prefers-reduced-motion: reduce)');
 const darkQuery = matchMedia('(prefers-color-scheme: dark)');
 
 let seed = readSeed();
-let take = 1;
 
 function readSeed(): number {
   try {
@@ -113,10 +112,6 @@ export function mountDoodles() {
       (trigger ?? c).addEventListener('click', () => {
         seed = randomSeed();
         writeSeed(seed);
-        take += 1;
-        document.querySelectorAll('[data-doodle-take]').forEach((el) => {
-          el.textContent = `take ${take}`;
-        });
         redrawAll();
         all().forEach(wipe);
       });
