@@ -7,7 +7,7 @@ export const site = {
   name: 'Ekin Başar Gökçe',
   shortName: 'Ekin B. Gökçe',
   url: 'https://ekinbasargokce.github.io',
-  title: 'Ekin Başar Gökçe · Engineer and PhD researcher',
+  title: 'Ekin Başar Gökçe',
   description:
     'Engineer and PhD student in Computer Science and Engineering at Sabancı University, working on generative drug design. Former Lead Developer at Beespenser. Also photography, musical theatre, a band and its videos.',
   location: 'İstanbul, Türkiye',
