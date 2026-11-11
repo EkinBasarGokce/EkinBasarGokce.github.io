@@ -18,5 +18,7 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
+      # npm install (not ci): the lockfile is written on Windows and GitHub runs a
+      # newer npm on Linux, which resolves a few optional packages differently.
+      - run: npm install --no-audit --no-fund
       - run: npm run build
