@@ -8,9 +8,9 @@ more: { label: All photographs, href: /photography/ }
 entries:
   - title: Darkroom
     role: Member
-    when: "TODO: years"
+    when: "2016 – 2022"
     detail: AFT, Amatör Fotoğrafçılık Topluluğu (METU's amateur photography society)
 ---
-Most of what I know about light I learned in the darkroom at AFT, METU's amateur photography society, where a print is something you make by hand.
+I photograph what I want to remember.
 
-TODO: a sentence on what you like to photograph and what you shoot with.
+Most of what I know about light I learned in the darkroom at AFT, METU's amateur photography society, where a print is something you make by hand.

@@ -13,17 +13,15 @@ entries:
     role: Director
     when: "2018"
     detail: Turkish adaptation of Charlie and the Chocolate Factory.
-  - title: "TODO: production you assistant-directed"
+  - title: Gasteciler
     role: Assistant director
+    detail: Turkish adaptation of Newsies.
   - title: Spamalot
     role: Actor
     detail: Monty Python's Spamalot.
   - title: Son Romanov
     role: Actor
-    detail: Anastasia.
-  - title: Gazeteciler
-    role: Actor
-    detail: Newsies.
+    detail: Turkish adaptation of Anastasia.
 links:
   - { label: "The ticketing system I built for the community", href: "#projects" }
 ---

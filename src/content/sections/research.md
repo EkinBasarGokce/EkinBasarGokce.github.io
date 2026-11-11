@@ -8,13 +8,13 @@ hue: mauve
 ---
 My research is on generative drug design: using deep generative models to propose new molecules and to steer them toward the properties a drug needs.
 
-For my MSc thesis, *Generating Synergistic Drug Partners Using Chemical Language Models*, I fine-tuned chemical language models to steer conditional generation toward drug partners that work well together. My PhD at Sabancı University continues this line of work.
+For my MSc thesis, *Generating Synergistic Drug Partners Using Chemical Language Models*, I fine-tuned chemical language models to generate drug partners that work well together.
 
-TODO: add a few sentences on your PhD direction and current project.
+In my PhD I am taking this further, to conditional partner drug generation across cancer types: models that propose a partner for a drug, tailored to the cancer it is meant to treat.
 
 - Generative drug design
 - Chemical language models
-- Drug synergy
+- Drug combinations and synergy
+- Cancer-specific generation
 - Fine-tuning and PEFT
-- Drug–target interaction
 - Agentic research workflows

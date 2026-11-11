@@ -5,7 +5,7 @@ roles:
   - title: Bioinformatician and Python Developer
     start: "2022"
     end: "2022"
-tags: [Python, Bioinformatics]
+tags: [Python, Bioinformatics, Automation]
 order: 40
 ---
-- TODO: one line on what you built at Bioeksen.
+- Built Python pipelines that automate primer design, turning a manual, step-by-step lab task into a fast and repeatable process.

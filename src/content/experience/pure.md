@@ -1,13 +1,13 @@
 ---
 org: Sabancı University
-unit: PURE, Program for Undergraduate Research
+unit: PURE, Program for Undergraduate Research · with Prof. Ogün Adebali
 location: İstanbul
 kind: internship
 roles:
-  - title: Research Intern
+  - title: Undergraduate Researcher
     start: "2020"
     end: "2020"
-tags: []
+tags: [Cancer genomics, Mutational signatures]
 order: 70
 ---
-- TODO: one line on the PURE project.
+- Analysed mutational signatures across the human cancer genome, looking for the characteristic mutation patterns that set different genomic regions apart.

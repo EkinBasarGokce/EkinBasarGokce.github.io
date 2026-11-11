@@ -11,17 +11,10 @@ A [now page](https://nownownow.com/about): what I am focused on at this point in
 
 ## Research
 
-- Starting my PhD at Sabancı University, building on my MSc thesis on generating synergistic drug partners with chemical language models.
-- TODO: what you are reading or experimenting with.
+- Starting my PhD at Sabancı University on conditional partner drug generation: models that propose drug combinations tailored to different cancer types.
+- Building on my MSc thesis, where I fine-tuned chemical language models to generate synergistic drug partners.
 
-## Teaching
+## Music
 
-- Teaching assistant at Sabancı University, on courses covering large language models, machine learning and big data.
-
-## Work
-
-- Wrapped up at Beespenser in October 2026, after leading its desktop app from the first line of code.
-
-## Off the clock
-
-- TODO: what Eksi is working on, a show you are part of, or what you are photographing.
+- Singing and making videos with my band, [Eksi](https://www.instagram.com/eksidegileksi/).
+- Giving private singing lessons. [Get in touch](/#contact) if you want to learn.
