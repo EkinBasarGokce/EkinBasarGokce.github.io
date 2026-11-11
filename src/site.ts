@@ -13,7 +13,8 @@ export const site = {
   location: 'İstanbul, Türkiye',
 
   hero: {
-    eyebrow: 'Engineer · PhD student',
+    /** small line above the name; leave empty for none */
+    eyebrow: '',
     /** Plain text with [label](href) links. */
     lede: 'I build software and machine learning systems. Until October 2026 I led development at [Beespenser](#experience), building the desktop app that drives its circuit-board dispensing machine. Now I am a PhD student in Computer Science and Engineering at [Sabancı University](#research), working on generative models for drug design.',
     bridge:

@@ -10,7 +10,7 @@ const hasCv = fs.existsSync(path.join(process.cwd(), 'public', site.cv.replace(/
 <section id="top" class="hero" aria-label="Introduction">
   <div class="wrap grid">
     <div class="copy enter">
-      <p class="eyebrow" style="--i:0">{site.hero.eyebrow}</p>
+      {site.hero.eyebrow && <p class="eyebrow" style="--i:0">{site.hero.eyebrow}</p>}
       <h1 style="--i:1">{site.name}</h1>
       <p class="lede" style="--i:2" set:html={inline(site.hero.lede)} />
       <ul class="links row" role="list" style="--i:3">

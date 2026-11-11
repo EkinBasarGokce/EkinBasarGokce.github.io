@@ -11,7 +11,7 @@ entries:
     detail: Turkish adaptation of Spring Awakening.
   - title: Charlie'nin Çikolata Fabrikası
     role: Director
-    when: "2018"
+    when: "2019"
     detail: Turkish adaptation of Charlie and the Chocolate Factory.
   - title: Gasteciler
     role: Assistant director
@@ -25,4 +25,4 @@ entries:
 links:
   - { label: "The ticketing system I built for the community", href: "#projects" }
 ---
-With Company Musicals, METU's musical theatre community, I have worked on every side of a show: on stage as an actor, beside the director as assistant director, and in the director's chair. In 2018 I planned a full one-year season and directed two musicals with a team of more than 80 people.
+With Company Musicals, METU's musical theatre community, I have worked on every side of a show: on stage as an actor, beside the director as assistant director, and in the director's chair. I directed two musicals, in 2018 and 2019, planning a full one-year season and leading a team of more than 80 people.
