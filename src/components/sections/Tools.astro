@@ -1,0 +1,31 @@
+---
+import { getCollection, type CollectionEntry } from 'astro:content';
+import Section from '../Section.astro';
+
+interface Props {
+  entry: CollectionEntry<'sections'>;
+  navId: string;
+}
+const { entry, navId } = Astro.props;
+const groups = (await getCollection('tools')).sort((a, b) => a.data.order - b.data.order);
+const hues = ['coral', 'amber', 'mauve', 'periwinkle'] as const;
+---
+
+<Section entry={entry} navId={navId}>
+  <ul class="ledger tools" role="list" data-stagger>
+    {groups.map((g, i) => (
+      <li class="reveal">
+        <p class="when label">{g.data.label}</p>
+        <ul class="chips" role="list">
+          {g.data.items.map((t) => <li class="chip" data-hue={hues[i % hues.length]}>{t}</li>)}
+        </ul>
+      </li>
+    ))}
+  </ul>
+</Section>
+
+<style>
+  .tools > li { padding-block: var(--space-s); align-items: center; }
+  .label { color: var(--ink); font-weight: 500; padding-top: 0; }
+  .tools .chips { margin-top: 0; }
+</style>

@@ -1,0 +1,79 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import Section from '../Section.astro';
+import Text from '../Text.astro';
+import { span, when } from '../../lib/format';
+
+interface Props {
+  entry: CollectionEntry<'sections'>;
+  navId: string;
+}
+const { entry, navId } = Astro.props;
+const items = (await getCollection('experience', (e) => !e.data.draft)).sort((a, b) => a.data.order - b.data.order);
+const rows = await Promise.all(items.map(async (e) => ({ e, Content: (await render(e)).Content })));
+---
+
+<Section entry={entry} navId={navId}>
+  <ol class="ledger" role="list" data-stagger>
+    {rows.map(({ e, Content }) => {
+      const d = e.data;
+      const newest = d.roles[0];
+      const oldest = d.roles[d.roles.length - 1];
+      const dates = span(oldest.start, newest.end ?? newest.start);
+      return (
+        <li class="reveal">
+          <p class="when">
+            {oldest.start ? (
+              dates
+            ) : (
+              <>
+                <span class="todo" title="Add start dates in the entry file">start</span>
+                {newest.end && ` – ${when(newest.end)}`}
+              </>
+            )}
+          </p>
+          <div>
+            <h3>{newest.title} <span class="org">· {d.org}</span></h3>
+            {(d.unit || d.location) && (
+              <p class="meta">
+                {d.unit && <Text value={d.unit} />}
+                {d.unit && d.location && ' · '}
+                {d.location}
+              </p>
+            )}
+            {d.roles.length > 1 && (
+              <ol class="roles" role="list" aria-label={`Roles at ${d.org}`}>
+                {d.roles.map((r) => (
+                  <li>
+                    <span>{r.title}</span>
+                    <span class="muted tnum">{span(r.start, r.end)}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
+            <div class="body"><Content /></div>
+            {d.tags.length > 0 && (
+              <ul class="chips" role="list">
+                {d.tags.map((t) => <li class="chip">{t}</li>)}
+              </ul>
+            )}
+          </div>
+        </li>
+      );
+    })}
+  </ol>
+</Section>
+
+<style>
+  .org { color: var(--muted); }
+  .roles {
+    margin-top: var(--space-xs);
+    padding-left: var(--space-s);
+    border-left: 2px solid color-mix(in srgb, var(--coral) 45%, transparent);
+    display: grid;
+    gap: 0.15rem;
+    font-size: var(--step--1);
+  }
+  .roles li { display: flex; gap: 0.75em; flex-wrap: wrap; }
+  .roles li:first-child span:first-child { font-weight: 600; }
+</style>

@@ -1,0 +1,17 @@
+---
+import { getCollection, render } from 'astro:content';
+import Page from '../../layouts/Page.astro';
+import { dateFmt } from '../../lib/format';
+
+export async function getStaticPaths() {
+  const notes = await getCollection('notes', (n) => !n.data.draft);
+  return notes.map((n) => ({ params: { slug: n.id }, props: { note: n } }));
+}
+const { note } = Astro.props;
+const { Content } = await render(note);
+---
+
+<Page title={note.data.title} eyebrow={dateFmt.format(note.data.date)} description={note.data.description} hue="mauve">
+  <Content />
+  <p class="small"><a href="/notes/">← All notes</a></p>
+</Page>

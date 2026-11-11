@@ -1,0 +1,12 @@
+---
+/** Renders a value from site.ts or frontmatter; "TODO: hint" becomes a dashed placeholder. */
+import { isTodo } from '../site';
+
+interface Props {
+  value?: string;
+}
+const { value = '' } = Astro.props;
+const hint = value.replace(/^\s*TODO:?\s*/i, '') || 'to fill in';
+---
+
+{isTodo(value) ? <span class="todo" title="Placeholder: fill this in">{hint}</span> : value}

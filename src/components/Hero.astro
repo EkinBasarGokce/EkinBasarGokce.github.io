@@ -1,0 +1,112 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import { site, isTodo } from '../site';
+import { inline } from '../lib/format';
+
+const hasCv = fs.existsSync(path.join(process.cwd(), 'public', site.cv.replace(/^\//, '')));
+---
+
+<section id="top" class="hero" aria-label="Introduction">
+  <div class="wrap grid">
+    <div class="copy enter">
+      <p class="eyebrow" style="--i:0">{site.hero.eyebrow}</p>
+      <h1 style="--i:1">{site.name}</h1>
+      <p class="lede" style="--i:2" set:html={inline(site.hero.lede)} />
+      <ul class="links row" role="list" style="--i:3">
+        <li><a href="#contact">Email</a></li>
+        {hasCv && <li><a href={site.cv}>CV</a></li>}
+        {site.socials.map((s) => (
+          <li>
+            {isTodo(s.href) ? (
+              <span class="todo" title={s.href}>{s.label}</span>
+            ) : (
+              <a class="out" href={s.href} rel="me noopener" target="_blank">{s.label}</a>
+            )}
+          </li>
+        ))}
+      </ul>
+      <p class="bridge" style="--i:4" set:html={inline(site.hero.bridge)} />
+    </div>
+
+    <figure class="doodle">
+      <button type="button" class="doodle-btn" data-doodle-trigger aria-label="Draw another face">
+        <canvas data-doodle="hero" width="300" height="340" role="img" aria-label="A hand-drawn doodle face, standing in for a portrait"></canvas>
+      </button>
+      <figcaption class="small muted">
+        self-portrait, approximately · <span data-doodle-take>take 1</span>
+        <span class="hint">tap to redraw</span>
+      </figcaption>
+    </figure>
+  </div>
+</section>
+
+<style>
+  .hero {
+    min-height: min(52rem, calc(100svh - var(--nav-h)));
+    display: grid;
+    align-items: center;
+    padding-block: var(--space-xl) var(--space-l);
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(0, 38rem) minmax(14rem, 1fr);
+    gap: var(--space-xl);
+    align-items: center;
+  }
+  .copy > * + * { margin-top: var(--space-s); }
+  .copy h1 { margin-top: var(--space-2xs); }
+  .lede {
+    font-family: var(--font-display);
+    font-variation-settings: 'SOFT' 100;
+    font-size: var(--step-1);
+    line-height: 1.42;
+    max-width: 34ch;
+  }
+  .lede :global(a),
+  .bridge :global(a) { text-decoration-color: color-mix(in srgb, var(--coral) 55%, transparent); }
+  .row { margin-top: var(--space-m) !important; font-weight: 500; font-size: var(--step--1); }
+  .bridge { color: var(--muted); max-width: 44ch; padding-top: var(--space-s); border-top: 1px solid var(--rule); }
+
+  .doodle {
+    position: relative;
+    justify-self: center;
+    display: grid;
+    justify-items: center;
+    gap: var(--space-2xs);
+  }
+  /* a soft static halo of the field's warmest light behind the face */
+  .doodle::before {
+    content: '';
+    position: absolute;
+    inset: -12% -18% 6%;
+    z-index: -1;
+    border-radius: 50%;
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--amber) calc(var(--peak) * 0.8), transparent), color-mix(in srgb, var(--coral) calc(var(--peak) * 0.3), transparent) 55%, transparent);
+  }
+  .doodle-btn { border-radius: 50%; cursor: pointer; touch-action: manipulation; }
+  .doodle canvas { width: 320px; height: 320px; }
+  @media (hover: hover) and (pointer: fine) {
+    .doodle-btn { transition: rotate 0.4s var(--ease-out); }
+    .doodle-btn:hover { rotate: -2deg; }
+  }
+  figcaption { text-align: center; font-style: italic; font-family: var(--font-display); }
+  .hint { display: block; font-style: normal; font-family: var(--font-body); opacity: 0.75; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .doodle { animation: enter 0.9s var(--ease-out) 0.25s both; }
+  }
+
+  @media (max-width: 52rem) {
+    .hero { min-height: auto; padding-top: var(--space-l); }
+    .grid { grid-template-columns: 1fr; gap: var(--space-m); }
+    .doodle { order: -1; justify-self: start; grid-template-columns: auto 1fr; align-items: center; gap: var(--space-s); }
+    .doodle canvas { width: 150px; height: 150px; }
+    figcaption { text-align: left; }
+  }
+</style>
+
+<script>
+  import { mountDoodles } from '../scripts/doodle';
+  mountDoodles();
+</script>

@@ -1,0 +1,15 @@
+---
+/** A hand-drawn rule, generated at build time from a seed string. */
+import { hashSeed, inkRule } from '../lib/ink';
+
+interface Props {
+  seed: string;
+  class?: string;
+}
+const { seed, class: cls = '' } = Astro.props;
+const strokes = inkRule(hashSeed(seed));
+---
+
+<svg class:list={['rule', cls]} viewBox="0 0 640 14" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+  {strokes.map((s) => <path d={s.d} stroke-width={s.width} opacity={s.opacity} />)}
+</svg>

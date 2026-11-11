@@ -1,0 +1,41 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Not found">
+  <section class="section lost">
+    <div class="wrap">
+      <canvas class="stray" width="220" height="220" role="img" aria-label="A hand-drawn cat"></canvas>
+      <p class="eyebrow">404</p>
+      <h1>Nobody by that name here.</h1>
+      <p class="muted">The page you were looking for does not exist, or has moved. This cat was drawn for you instead.</p>
+      <p><a class="btn" href="/">Back to the home page</a></p>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .lost { padding-bottom: var(--space-2xl); }
+  .lost .wrap > * + * { margin-top: var(--space-s); }
+  .stray { width: 160px; height: 160px; }
+  h1 { font-size: var(--step-4); }
+</style>
+
+<script>
+  // @ts-ignore: plain JS module
+  import { drawFace, setPalette } from '../scripts/sketch-engine.js';
+  import { INKS } from '../scripts/doodle';
+  const c = document.querySelector<HTMLCanvasElement>('.stray');
+  if (c) {
+    const t = document.documentElement.dataset.theme;
+    const dark = t ? t === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    setPalette(dark ? INKS.dark : INKS.light);
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    c.width = 160 * dpr;
+    c.height = 160 * dpr;
+    const ctx = c.getContext('2d')!;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // a different stray every minute
+    drawFace(ctx, { seed: Math.floor(Date.now() / 60000), size: 90, cx: 80, cy: 86, kind: 'cat' });
+  }
+</script>

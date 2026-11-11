@@ -1,0 +1,10 @@
+# Empty until the first paper, poster or talk. The Publications list
+# stays hidden while this is empty. Example entry:
+# - id: smith2027
+#   title: "Paper title"
+#   authors: "E. B. Gökçe, ..."
+#   venue: "NeurIPS Workshop on ..."
+#   year: "2027"
+#   status: under review
+#   links: [{ label: arXiv, href: "https://arxiv.org/abs/..." }]
+[]

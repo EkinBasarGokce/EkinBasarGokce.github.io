@@ -1,0 +1,85 @@
+/*
+ * Design tokens. Colours were sampled from the mood image (cream paper,
+ * coral, amber, rose-mauve, pale periwinkle). Text is always ink; the raw hues
+ * are light, never text. Contrast is computed against the worst case: text
+ * sitting on a blob centre at full field strength.
+ *
+ *   ink     on paper 16.0:1, on coral core 9.4:1
+ *   muted   on paper  7.8:1, on any core >= 4.6:1
+ *   link    on paper  8.2:1, on coral core 4.8:1
+ */
+:root {
+  color-scheme: light dark;
+
+  /* light hues (field, chips, washes) */
+  --coral: #fc7c7b;
+  --amber: #f89966;
+  --mauve: #d597b6;
+  --periwinkle: #bbb8d9;
+
+  --paper: light-dark(#fcfaf5, #17141a);
+  --paper-2: light-dark(#f5f0e8, #201c24);
+  --ink: light-dark(#211d1a, #f2eee8);
+  --muted: light-dark(#544f49, #b8b0a8);
+  --rule: light-dark(rgb(33 29 26 / 0.12), rgb(242 238 232 / 0.13));
+  --rule-strong: light-dark(rgb(33 29 26 / 0.24), rgb(242 238 232 / 0.26));
+  --link: light-dark(#8e252c, #f3a6ab);
+
+  /* text-safe inks of each hue */
+  --coral-ink: light-dark(#8e252c, #f3a6ab);
+  --amber-ink: light-dark(#833800, #f6c08f);
+  --mauve-ink: light-dark(#862960, #e7b3cf);
+  --periwinkle-ink: light-dark(#543f99, #c6c2ee);
+
+  --panel: light-dark(rgb(252 250 245 / 0.72), rgb(30 26 34 / 0.66));
+  --nav-bg: light-dark(rgb(252 250 245 / 0.86), rgb(23 20 26 / 0.86));
+  --focus: light-dark(#543f99, #c6c2ee);
+  --todo: light-dark(#b0461c, #f6c08f);
+
+
+  /* field strength: peak alpha at a blob centre */
+  --peak: 60%;
+  --grain-a: 0.07;
+
+  /* type */
+  --font-display: 'Fraunces Variable', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
+  --font-body: 'Figtree Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  /* fluid type scale (Utopia: 320->1240px, 17->19px, 1.2->1.333) */
+  --step--1: clamp(0.875rem, 0.86rem + 0.08vw, 0.92rem);
+  --step-0: clamp(1.0625rem, 1.019rem + 0.217vw, 1.1875rem);
+  --step-1: clamp(1.275rem, 1.19rem + 0.43vw, 1.583rem);
+  --step-2: clamp(1.53rem, 1.38rem + 0.75vw, 2.11rem);
+  --step-3: clamp(1.836rem, 1.59rem + 1.23vw, 2.81rem);
+  --step-4: clamp(2.2rem, 1.82rem + 1.9vw, 3.75rem);
+  --step-5: clamp(2.64rem, 2.06rem + 2.9vw, 5rem);
+
+  /* space */
+  --space-3xs: 0.25rem;
+  --space-2xs: 0.5rem;
+  --space-xs: 0.75rem;
+  --space-s: 1rem;
+  --space-m: 1.5rem;
+  --space-l: 2rem;
+  --space-xl: clamp(2.5rem, 2rem + 2vw, 3.5rem);
+  --space-2xl: clamp(4rem, 3rem + 4vw, 6.5rem);
+  --space-3xl: clamp(5rem, 3.5rem + 6vw, 9rem);
+
+  --gutter: clamp(1rem, 0.6rem + 2vw, 2rem);
+  --wrap: 72rem;
+  --measure: 40rem;
+  --ledger: 9rem;
+  --nav-h: 3.75rem;
+  --radius: 0.85rem;
+
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+:root[data-theme='light'] { color-scheme: light; }
+:root[data-theme='dark'] { color-scheme: dark; }
+
+/* field strength is not a colour, so it needs its own theme switch */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) { --peak: 34%; --grain-a: 0.09; }
+}
+:root[data-theme='dark'] { --peak: 34%; --grain-a: 0.09; }

@@ -1,0 +1,26 @@
+---
+/** Notes: one Markdown file per note in src/content/notes/. */
+import { getCollection } from 'astro:content';
+import Page from '../../layouts/Page.astro';
+import { dateFmt } from '../../lib/format';
+
+const notes = (await getCollection('notes', (n) => !n.data.draft)).sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+---
+
+<Page title="Notes" eyebrow="Writing" hue="mauve" description="Notes by Ekin Başar Gökçe on research, engineering, photography and music.">
+  {notes.length > 0 ? (
+    <ol class="ledger" role="list">
+      {notes.map((n) => (
+        <li>
+          <p class="when"><time datetime={n.data.date.toISOString()}>{dateFmt.format(n.data.date)}</time></p>
+          <div>
+            <h3><a href={`/notes/${n.id}/`}>{n.data.title}</a></h3>
+            {n.data.description && <p class="meta">{n.data.description}</p>}
+          </div>
+        </li>
+      ))}
+    </ol>
+  ) : (
+    <p class="muted">Nothing here yet. Notes on research, engineering, photography and music will collect here.</p>
+  )}
+</Page>

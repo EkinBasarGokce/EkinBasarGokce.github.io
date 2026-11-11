@@ -1,0 +1,17 @@
+# One group per entry. Lower order comes first.
+- id: llm
+  label: LLMs and agents
+  order: 10
+  items: [LLMs, RAG, MCP, Multi-agent orchestration, Claude Code, Prompt design]
+- id: training
+  label: Training and fine-tuning
+  order: 20
+  items: [PyTorch, LoRA, PEFT, Hugging Face Transformers, scikit-learn]
+- id: science
+  label: Science and data
+  order: 30
+  items: [Generative models, Cheminformatics, Bioinformatics, Pandas, Statistics]
+- id: engineering
+  label: Engineering
+  order: 40
+  items: [Python, TypeScript, React, FastAPI, Tauri, SQL, Git]

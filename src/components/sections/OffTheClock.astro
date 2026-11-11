@@ -1,0 +1,75 @@
+---
+/**
+ * The creative half: one section, a chip sub-nav, and one Strand per file in
+ * src/content/strands/. Adding a strand = adding one .md file there.
+ */
+import { getCollection, type CollectionEntry } from 'astro:content';
+import Section from '../Section.astro';
+import Strand from '../Strand.astro';
+
+interface Props {
+  entry: CollectionEntry<'sections'>;
+  navId: string;
+}
+const { entry, navId } = Astro.props;
+const strands = (await getCollection('strands', (s) => !s.data.draft)).sort((a, b) => a.data.order - b.data.order);
+---
+
+<Section entry={entry} navId={navId}>
+  <div class="otc" data-strands>
+    <nav class="strand-nav" aria-label="Off the clock">
+      <ul role="list">
+        {strands.map((s) => (
+          <li>
+            <a href={`#${s.id}`} data-chip={s.id} data-hue={s.data.hue} class="chip">{s.data.title}</a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+    {strands.map((s) => <Strand strand={s} />)}
+  </div>
+</Section>
+
+<style>
+  /* a floating pill bar that sticks under the header */
+  .strand-nav {
+    position: sticky;
+    top: calc(var(--nav-h) + 0.5rem);
+    z-index: 5;
+    width: fit-content;
+    max-width: 100%;
+    margin-bottom: var(--space-s);
+    padding: 0.3rem;
+    border-radius: 999px;
+    background: var(--nav-bg);
+    border: 1px solid var(--rule);
+    box-shadow: 0 8px 24px rgb(60 40 80 / 0.08);
+  }
+  .strand-nav ul {
+    display: flex;
+    gap: 0.45rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+  .strand-nav .chip { border-color: transparent; background: transparent; }
+  .strand-nav ul::-webkit-scrollbar { display: none; }
+  .strand-nav li { scroll-snap-align: center; flex: none; }
+  .chip {
+    text-decoration: none;
+    font-weight: 500;
+    padding: 0.45em 0.95em;
+    transition: background-color 0.3s ease, border-color 0.3s ease;
+  }
+  .chip::before {
+    content: '';
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 50%;
+    background: var(--hue);
+  }
+  .strand-nav .chip[aria-current='true'] {
+    background: color-mix(in srgb, var(--hue) 34%, var(--paper));
+    border-color: color-mix(in srgb, var(--hue) 75%, transparent);
+  }
+</style>

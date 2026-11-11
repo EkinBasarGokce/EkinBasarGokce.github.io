@@ -1,0 +1,45 @@
+---
+/**
+ * Layout for standalone pages. A Markdown page in src/pages/ uses it with
+ *   layout: ../layouts/Page.astro
+ * and front matter: title, eyebrow (optional), description (optional), hue (optional).
+ */
+import Base from './Base.astro';
+import SectionHead from '../components/SectionHead.astro';
+
+interface Props {
+  title?: string;
+  eyebrow?: string;
+  description?: string;
+  hue?: string;
+  frontmatter?: { title: string; eyebrow?: string; description?: string; hue?: string; updated?: string };
+  wide?: boolean;
+}
+const fm = (Astro.props.frontmatter ?? {}) as Partial<NonNullable<Props['frontmatter']>>;
+const title = Astro.props.title ?? fm.title ?? '';
+const eyebrow = Astro.props.eyebrow ?? fm.eyebrow;
+const description = Astro.props.description ?? fm.description;
+const hue = Astro.props.hue ?? fm.hue ?? 'coral';
+const id = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'page';
+---
+
+<Base title={title.replace(/_/g, '')} description={description}>
+  <article class="section page" data-hue={hue}>
+    <div class="wrap">
+      <p class="back small"><a href="/">← Home</a></p>
+      <SectionHead id={id} title={title} eyebrow={eyebrow} />
+      {fm.updated && <p class="small muted updated">Updated {fm.updated}</p>}
+      <div class:list={[{ prose: !Astro.props.wide }, 'page-body']}>
+        <slot />
+      </div>
+    </div>
+  </article>
+</Base>
+
+<style>
+  .page { padding-bottom: var(--space-2xl); }
+  .back { margin-bottom: var(--space-l); }
+  .back a { text-decoration: none; color: var(--muted); }
+  .back a:hover { color: var(--ink); }
+  .updated { margin-top: calc(-1 * var(--space-s)); margin-bottom: var(--space-l); }
+</style>

@@ -1,0 +1,72 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import Section from '../Section.astro';
+
+interface Props {
+  entry: CollectionEntry<'sections'>;
+  navId: string;
+}
+const { entry, navId } = Astro.props;
+const items = (await getCollection('projects', (p) => !p.data.draft)).sort((a, b) => a.data.order - b.data.order);
+const cards = await Promise.all(items.map(async (p) => ({ p, Content: (await render(p)).Content, hasBody: Boolean(p.body?.trim()) })));
+---
+
+<Section entry={entry} navId={navId}>
+  <ul class="projects" role="list" data-stagger>
+    {cards.map(({ p, Content, hasBody }) => (
+      <li class="panel project glow reveal" data-hue={p.data.hue}>
+        <div class="top">
+          <h3>{p.data.title}</h3>
+          {p.data.year && <span class="small muted tnum">{p.data.year}</span>}
+        </div>
+        <p>{p.data.summary}</p>
+        {hasBody && <div class="more small"><Content /></div>}
+        <div class="foot">
+          {p.data.tags.length > 0 && (
+            <ul class="chips" role="list">
+              {p.data.tags.map((t) => <li class="chip">{t}</li>)}
+            </ul>
+          )}
+          {p.data.links.length > 0 && (
+            <ul class="links small" role="list">
+              {p.data.links.map((l) => (
+                <li><a class="out" href={l.href} target="_blank" rel="noopener">{l.label}</a></li>
+              ))}
+            </ul>
+          )}
+        </div>
+      </li>
+    ))}
+  </ul>
+</Section>
+
+<style>
+  .projects {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr));
+    gap: var(--space-s);
+  }
+  .project {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-xs);
+    transition: border-color 0.25s ease, translate 0.25s var(--ease-out);
+  }
+  .project::after {
+    content: '';
+    position: absolute;
+    top: var(--space-m);
+    right: var(--space-m);
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: var(--hue);
+  }
+  .top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-s); padding-right: var(--space-m); }
+  .foot { margin-top: auto; display: grid; gap: var(--space-xs); padding-top: var(--space-2xs); }
+  @media (hover: hover) and (pointer: fine) {
+    .project:hover { border-color: color-mix(in srgb, var(--hue) 55%, transparent); translate: 0 -2px; }
+  }
+</style>

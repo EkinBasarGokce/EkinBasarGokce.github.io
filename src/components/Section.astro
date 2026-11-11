@@ -1,0 +1,29 @@
+---
+/** Shared wrapper for every home section: anchor, scrollspy target, head, intro. */
+import { render, type CollectionEntry } from 'astro:content';
+import SectionHead from './SectionHead.astro';
+
+interface Props {
+  entry: CollectionEntry<'sections'>;
+  /** which nav item lights up while this section is on screen */
+  navId: string;
+  class?: string;
+}
+const { entry, navId, class: cls } = Astro.props;
+const { Content } = await render(entry);
+const hasIntro = Boolean(entry.body?.trim());
+---
+
+<section
+  id={entry.id}
+  class:list={['section', `section--${entry.data.kind}`, cls]}
+  data-nav={navId}
+  data-hue={entry.data.hue}
+  aria-labelledby={`${entry.id}-title`}
+>
+  <div class="wrap">
+    <SectionHead id={entry.id} title={entry.data.title} eyebrow={entry.data.eyebrow} exit={entry.data.exit} />
+    {hasIntro && <div class="intro reveal"><Content /></div>}
+    <slot />
+  </div>
+</section>

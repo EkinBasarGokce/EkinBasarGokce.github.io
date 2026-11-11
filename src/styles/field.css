@@ -1,0 +1,102 @@
+/*
+ * The light field: cream paper with soft coloured light behind it.
+ * Performance rules (measured on throttled phone emulation):
+ *   - no filter: blur() anywhere; the softness is the gradient's eased stops
+ *   - only transform and opacity animate
+ *   - no mix-blend-mode, no backdrop-filter on fixed or sticky layers
+ *   - grain is one static SVG tile with normal blending
+ */
+.bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+  background: var(--paper);
+  transition: background-color 0.6s ease;
+}
+.bg__field { position: absolute; inset: 0; }
+
+.blob {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: var(--w);
+  height: var(--h);
+  margin: calc(var(--h) / -2) 0 0 calc(var(--w) / -2);
+  border-radius: 50%;
+  opacity: var(--o, 1);
+  transition: opacity 1.2s ease;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--c) var(--peak), transparent), transparent 75%);
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--c) var(--peak), transparent) 0%,
+    color-mix(in srgb, var(--c) calc(var(--peak) * 0.9), transparent) 20%,
+    color-mix(in srgb, var(--c) calc(var(--peak) * 0.62), transparent) 40%,
+    color-mix(in srgb, var(--c) calc(var(--peak) * 0.3), transparent) 60%,
+    color-mix(in srgb, var(--c) calc(var(--peak) * 0.09), transparent) 80%,
+    transparent 100%
+  );
+}
+
+/* Composition after the mood image: coral high, an amber streak from the left,
+   rose-mauve low right, a small pale periwinkle below. */
+.blob--coral      { --c: var(--coral);      --x: 58%; --y: 24%; --w: 64vmax; --h: 44vmax; --d: 88s; }
+.blob--amber      { --c: var(--amber);      --x: 18%; --y: 44%; --w: 62vmax; --h: 28vmax; --d: 104s; }
+.blob--mauve      { --c: var(--mauve);      --x: 80%; --y: 70%; --w: 56vmax; --h: 46vmax; --d: 96s; }
+.blob--periwinkle { --c: var(--periwinkle); --x: 46%; --y: 92%; --w: 40vmax; --h: 40vmax; --d: 112s; }
+
+@media (max-width: 40rem) {
+  .blob--coral      { --x: 70%; --y: 14%; --w: 120vmin; --h: 95vmin; }
+  .blob--amber      { --x: 8%;  --y: 38%; --w: 120vmin; --h: 60vmin; }
+  .blob--mauve      { --x: 85%; --y: 78%; --w: 115vmin; --h: 95vmin; }
+  .blob--periwinkle { --x: 30%; --y: 98%; --w: 80vmin;  --h: 70vmin; }
+}
+
+/* Grain: a 200px fractal-noise tile, rasterised once. */
+.bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: var(--grain-a);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+}
+
+/* Off the clock: the field leans toward the strand being read. */
+:root[data-lean] .blob { --o: 0.4; }
+:root[data-lean='coral'] .blob--coral,
+:root[data-lean='amber'] .blob--amber,
+:root[data-lean='mauve'] .blob--mauve,
+:root[data-lean='periwinkle'] .blob--periwinkle { --o: 1; }
+:root[data-lean='ink'] .blob { --o: 0.7; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .blob { animation: drift var(--d) ease-in-out infinite alternate; }
+  .blob--coral { animation-delay: -13s; }
+  .blob--amber { animation-delay: -41s; }
+  .blob--mauve { animation-delay: -23s; animation-name: drift-b; }
+  .blob--periwinkle { animation-delay: -67s; animation-name: drift-b; }
+
+  @keyframes drift {
+    0%   { transform: translate3d(0, 0, 0) scale(1); }
+    50%  { transform: translate3d(4vmax, 2vmax, 0) scale(1.06); }
+    100% { transform: translate3d(-3vmax, 4vmax, 0) scale(0.96); }
+  }
+  @keyframes drift-b {
+    0%   { transform: translate3d(0, 0, 0) scale(1); }
+    50%  { transform: translate3d(-5vmax, -2vmax, 0) scale(1.05); }
+    100% { transform: translate3d(3vmax, -4vmax, 0) scale(0.97); }
+  }
+
+  /* The light is strongest at the top and settles as you read. */
+  @supports (animation-timeline: scroll()) {
+    .bg__field {
+      animation: settle linear both;
+      animation-timeline: scroll(root);
+      animation-range: 0 100vh;
+    }
+    @keyframes settle { to { opacity: 0.72; } }
+  }
+}

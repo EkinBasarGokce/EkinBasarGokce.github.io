@@ -1,0 +1,42 @@
+---
+/**
+ * Home: the hero, then one component per section file in src/content/sections/,
+ * in `order`. The `kind` field picks the component.
+ */
+import { getCollection } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import Hero from '../components/Hero.astro';
+import Experience from '../components/sections/Experience.astro';
+import Projects from '../components/sections/Projects.astro';
+import Research from '../components/sections/Research.astro';
+import Education from '../components/sections/Education.astro';
+import Tools from '../components/sections/Tools.astro';
+import OffTheClock from '../components/sections/OffTheClock.astro';
+import Contact from '../components/sections/Contact.astro';
+import Prose from '../components/sections/Prose.astro';
+
+const byKind = {
+  experience: Experience,
+  projects: Projects,
+  research: Research,
+  education: Education,
+  tools: Tools,
+  'off-the-clock': OffTheClock,
+  contact: Contact,
+  prose: Prose,
+};
+
+const sections = (await getCollection('sections', (s) => !s.data.draft)).sort((a, b) => a.data.order - b.data.order);
+
+// A section without its own nav item lights up the nav item before it.
+let current = '';
+const rows = sections.map((s) => {
+  if (s.data.nav) current = s.id;
+  return { s, navId: current || s.id, Component: byKind[s.data.kind] };
+});
+---
+
+<Base person>
+  <Hero />
+  {rows.map(({ s, navId, Component }) => <Component entry={s} navId={navId} />)}
+</Base>

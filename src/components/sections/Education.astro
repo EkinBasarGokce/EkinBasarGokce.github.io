@@ -1,0 +1,54 @@
+---
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import Section from '../Section.astro';
+import Text from '../Text.astro';
+import { span } from '../../lib/format';
+
+interface Props {
+  entry: CollectionEntry<'sections'>;
+  navId: string;
+}
+const { entry, navId } = Astro.props;
+const items = (await getCollection('education', (e) => !e.data.draft)).sort((a, b) => a.data.order - b.data.order);
+const rows = await Promise.all(items.map(async (e) => ({ e, Content: (await render(e)).Content, hasBody: Boolean(e.body?.trim()) })));
+---
+
+<Section entry={entry} navId={navId}>
+  <ol class="ledger" role="list" data-stagger>
+    {rows.map(({ e, Content, hasBody }) => {
+      const d = e.data;
+      const dates = span(d.start, d.end);
+      return (
+        <li class="reveal">
+          <div class="when">
+            <span class="degree">{d.degree}</span>
+            {dates ? <span class="tnum">{d.end === 'present' && !d.start ? 'Ongoing' : dates}</span> : <span class="todo">years</span>}
+          </div>
+          <div>
+            <h3>{d.field}</h3>
+            <p class="meta">{d.institution}</p>
+            {d.focus && <p class="line"><span class="muted">Focus</span> <Text value={d.focus} /></p>}
+            {d.thesis && <p class="line"><span class="muted">Thesis</span> <Text value={d.thesis} /></p>}
+            {hasBody && <div class="body"><Content /></div>}
+          </div>
+        </li>
+      );
+    })}
+  </ol>
+</Section>
+
+<style>
+  .when { display: grid; gap: 0.2rem; align-content: start; }
+  .degree {
+    font-family: var(--font-display);
+    font-variation-settings: 'SOFT' 100;
+    font-size: var(--step-2);
+    line-height: 1;
+    color: var(--ink);
+  }
+  .line { margin-top: var(--space-2xs); max-width: var(--measure); }
+  .line .muted { font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.08em; margin-right: 0.5em; }
+  @media (max-width: 40rem) {
+    .when { grid-auto-flow: column; justify-content: start; align-items: baseline; gap: 0.75rem; }
+  }
+</style>

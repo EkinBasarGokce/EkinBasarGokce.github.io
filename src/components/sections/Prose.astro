@@ -1,0 +1,19 @@
+---
+/** A free-form section: everything comes from the Markdown body. */
+import { render, type CollectionEntry } from 'astro:content';
+import SectionHead from '../SectionHead.astro';
+
+interface Props {
+  entry: CollectionEntry<'sections'>;
+  navId: string;
+}
+const { entry, navId } = Astro.props;
+const { Content } = await render(entry);
+---
+
+<section id={entry.id} class="section section--prose" data-nav={navId} data-hue={entry.data.hue} aria-labelledby={`${entry.id}-title`}>
+  <div class="wrap">
+    <SectionHead id={entry.id} title={entry.data.title} eyebrow={entry.data.eyebrow} exit={entry.data.exit} />
+    <div class="prose reveal"><Content /></div>
+  </div>
+</section>

@@ -1,0 +1,141 @@
+---
+/** One creative practice inside Off the clock. Everything comes from its .md file. */
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import { Picture } from 'astro:assets';
+import Text from './Text.astro';
+import Video from './Video.astro';
+import LinkCard from './LinkCard.astro';
+import { getPhotos } from '../lib/photos';
+
+interface Props {
+  strand: CollectionEntry<'strands'>;
+}
+const { strand } = Astro.props;
+const d = strand.data;
+const { Content } = await render(strand);
+
+const wants = (m: 'photos' | 'videos' | 'cards') => d.media.includes(m);
+const photos = wants('photos') ? (await getPhotos()).filter((p) => p.home).slice(0, 6) : [];
+const videos = wants('videos') ? await getCollection('videos', (v) => v.data.strand === strand.id) : [];
+const cards = wants('cards') ? await getCollection('cards', (c) => c.data.strand === strand.id) : [];
+---
+
+<article id={strand.id} class="strand" data-strand={strand.id} data-hue={d.hue} aria-labelledby={`${strand.id}-title`}>
+  <header class="side reveal">
+    <h3 id={`${strand.id}-title`}>{d.title}</h3>
+    <span class="bar" aria-hidden="true"></span>
+    <p class="kicker">{d.kicker}</p>
+  </header>
+
+  <div class="main">
+    <div class="prose reveal"><Content /></div>
+
+    {d.entries.length > 0 && (
+      <ul class="ledger entries" role="list" data-stagger>
+        {d.entries.map((e) => (
+          <li class="reveal">
+            <p class="when">{e.when ? <Text value={e.when} /> : e.role}</p>
+            <div>
+              <p class="entry-title">
+                {e.href ? <a href={e.href}><Text value={e.title} /></a> : <Text value={e.title} />}
+                {e.when && e.role && <span class="muted"> · {e.role}</span>}
+              </p>
+              {e.detail && <p class="small muted"><Text value={e.detail} /></p>}
+            </div>
+          </li>
+        ))}
+      </ul>
+    )}
+
+    {wants('photos') && (
+      photos.length > 0 ? (
+        <ul class="photos reveal" role="list">
+          {photos.map((p) => (
+            <li>
+              <a href="/photography/" aria-label={`${p.alt}. Open the photography page`}>
+                <Picture src={p.src} alt={p.alt} formats={['avif', 'webp']} widths={[320, 640, 960]} sizes="(min-width: 64rem) 16rem, (min-width: 40rem) 30vw, 46vw" />
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p class="small"><span class="todo">Add photos to src/assets/photos/ and mark six with home: true in photos.yaml</span></p>
+      )
+    )}
+
+    {wants('videos') && (
+      videos.length > 0 ? (
+        <div class="videos">
+          {videos.map((v) => <Video id={v.id} title={v.data.title} role={v.data.role} year={v.data.year} start={v.data.start} />)}
+        </div>
+      ) : (
+        <p class="small"><span class="todo">Add YouTube video ids to src/content/videos.yaml with strand: {strand.id}</span></p>
+      )
+    )}
+
+    {cards.length > 0 && (
+      <div class="cards">
+        {cards.map((c) => <LinkCard label={c.data.label} sub={c.data.sub} href={c.data.href} platform={c.data.platform} />)}
+      </div>
+    )}
+
+    {(d.links.length > 0 || d.more) && (
+      <div class="out-row">
+        {d.more && <a class="btn" href={d.more.href}>{d.more.label} →</a>}
+        {d.links.length > 0 && (
+          <ul class="links small" role="list">
+            {d.links.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
+          </ul>
+        )}
+      </div>
+    )}
+  </div>
+</article>
+
+<style>
+  .strand {
+    display: grid;
+    grid-template-columns: minmax(10rem, 15rem) minmax(0, 1fr);
+    gap: var(--space-l) var(--space-xl);
+    padding-block: var(--space-xl);
+    border-top: 1px solid var(--rule);
+    scroll-margin-top: calc(var(--nav-h) + 4rem);
+  }
+  .side { position: sticky; top: calc(var(--nav-h) + 4.5rem); align-self: start; }
+  .side h3 { font-size: var(--step-2); }
+  .bar {
+    display: block;
+    width: 2.5rem;
+    height: 3px;
+    border-radius: 2px;
+    margin-block: var(--space-xs);
+    background: var(--hue);
+  }
+  .kicker { color: var(--muted); font-size: var(--step--1); max-width: 22ch; }
+  .main { display: grid; gap: var(--space-m); min-width: 0; }
+  .entries { --ledger: 7.5rem; }
+  .entries > li { padding-block: var(--space-xs); }
+  .entry-title { font-weight: 500; }
+
+  .photos {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2xs);
+  }
+  .photos a { display: block; border-radius: 0.5rem; overflow: hidden; aspect-ratio: 4 / 5; background: var(--paper-2); }
+  .photos :global(img) { width: 100%; height: 100%; object-fit: cover; transition: scale 0.5s var(--ease-out); }
+  @media (hover: hover) and (pointer: fine) {
+    .photos a:hover :global(img) { scale: 1.04; }
+  }
+  .videos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: var(--space-m); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); gap: var(--space-s); }
+  .out-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-s) var(--space-m); }
+
+  @media (max-width: 48rem) {
+    .strand { grid-template-columns: 1fr; gap: var(--space-s); padding-block: var(--space-l); }
+    .side { position: static; }
+    .photos { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>

@@ -1,0 +1,89 @@
+---
+/** Full gallery: every photo in src/assets/photos/, masonry columns, native <dialog> lightbox. */
+import { Picture, getImage } from 'astro:assets';
+import Page from '../layouts/Page.astro';
+import { getPhotos } from '../lib/photos';
+
+const photos = await getPhotos();
+const items = await Promise.all(
+  photos.map(async (p) => ({ p, full: await getImage({ src: p.src, width: Math.min(2000, p.src.width), format: 'webp' }) })),
+);
+---
+
+<Page title="Photography" eyebrow="Off the clock" hue="periwinkle" description="Photographs by Ekin Başar Gökçe, from film and the darkroom at AFT (METU) to digital." wide>
+  <p class="prose lead">
+    Photographs from the darkroom at AFT, METU's amateur photography society, and from wherever I happen to be carrying a camera.
+  </p>
+
+  {items.length > 0 ? (
+    <ul class="gallery" role="list">
+      {items.map(({ p, full }, i) => (
+        <li>
+          <a href={full.src} data-lightbox data-alt={p.alt} data-caption={[p.caption, p.year].filter(Boolean).join(' · ')}>
+            <Picture
+              src={p.src}
+              alt={p.alt}
+              formats={['avif', 'webp']}
+              widths={[480, 960, 1440]}
+              sizes="(min-width: 72rem) 23rem, (min-width: 40rem) 45vw, 100vw"
+              loading={i < 4 ? 'eager' : 'lazy'}
+            />
+          </a>
+          {(p.caption || p.year) && <p class="small muted cap">{[p.caption, p.year].filter(Boolean).join(' · ')}</p>}
+        </li>
+      ))}
+    </ul>
+  ) : (
+    <p class="empty"><span class="todo">Drop photos into src/assets/photos/ and they appear here, newest captions from photos.yaml.</span></p>
+  )}
+
+  <dialog class="lightbox" data-lightbox-dialog aria-label="Photograph">
+    <figure>
+      <img alt="" />
+      <figcaption class="small"></figcaption>
+    </figure>
+    <div class="controls">
+      <button type="button" class="btn" data-prev aria-label="Previous photograph">←</button>
+      <button type="button" class="btn" data-close>Close</button>
+      <button type="button" class="btn" data-next aria-label="Next photograph">→</button>
+    </div>
+  </dialog>
+</Page>
+
+<style>
+  .lead { margin-bottom: var(--space-l); color: var(--muted); }
+  .gallery {
+    list-style: none;
+    padding: 0;
+    columns: 3 18rem;
+    column-gap: var(--space-s);
+  }
+  .gallery li { break-inside: avoid; margin-bottom: var(--space-s); }
+  .gallery a { display: block; border-radius: 0.5rem; overflow: hidden; background: var(--paper-2); }
+  .gallery :global(img) { width: 100%; height: auto; transition: scale 0.5s var(--ease-out); }
+  @media (hover: hover) and (pointer: fine) {
+    .gallery a:hover :global(img) { scale: 1.03; }
+  }
+  .cap { margin-top: var(--space-3xs); }
+
+  .lightbox {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: var(--space-m);
+    border: 0;
+    background: transparent;
+    color: var(--ink);
+    display: none;
+  }
+  .lightbox[open] { display: grid; grid-template-rows: 1fr auto; place-items: center; gap: var(--space-s); }
+  .lightbox::backdrop { background: color-mix(in srgb, var(--paper) 90%, transparent); }
+  .lightbox figure { display: grid; gap: var(--space-2xs); justify-items: center; min-height: 0; max-height: 100%; }
+  .lightbox img { max-width: min(100%, 1600px); max-height: calc(100dvh - 9rem); object-fit: contain; border-radius: 0.4rem; box-shadow: 0 20px 60px rgb(60 40 80 / 0.25); }
+  .controls { display: flex; gap: var(--space-xs); }
+  @media (prefers-reduced-motion: no-preference) {
+    .lightbox[open] img { animation: enter 0.35s var(--ease-out); }
+  }
+</style>

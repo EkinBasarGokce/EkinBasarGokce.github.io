@@ -1,0 +1,95 @@
+---
+import '@fontsource-variable/fraunces/soft.css';
+import '@fontsource-variable/fraunces/soft-italic.css';
+import '@fontsource-variable/figtree/wght.css';
+import '../styles/global.css';
+import frauncesLatin from '@fontsource-variable/fraunces/files/fraunces-latin-soft-normal.woff2?url';
+
+import Field from '../components/Field.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import { site } from '../site';
+
+interface Props {
+  /** page title; the home page passes nothing and gets the full site title */
+  title?: string;
+  description?: string;
+  /** structured data for search engines, home page only */
+  person?: boolean;
+}
+const { title, description = site.description, person = false } = Astro.props;
+const fullTitle = title ? `${title} · ${site.name}` : site.title;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const ogImage = new URL('/og.jpg', Astro.site).href;
+const isHome = Astro.url.pathname === '/';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  '@id': `${site.url}/#me`,
+  name: site.name,
+  url: site.url,
+  jobTitle: ['Lead Developer', 'PhD student'],
+  worksFor: { '@type': 'Organization', name: 'Beespenser' },
+  affiliation: { '@type': 'CollegeOrUniversity', name: 'Sabancı University' },
+  alumniOf: [
+    { '@type': 'CollegeOrUniversity', name: 'Sabancı University' },
+    { '@type': 'CollegeOrUniversity', name: 'Middle East Technical University' },
+  ],
+  knowsAbout: ['Generative drug design', 'Large language models', 'Multi-agent systems', 'Photography', 'Musical theatre'],
+  sameAs: site.socials.map((s) => s.href).filter((h) => h.startsWith('http')),
+};
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{fullTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="theme-color" content="#fcfaf5" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#17141a" media="(prefers-color-scheme: dark)" />
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="preload" href={frauncesLatin} as="font" type="font/woff2" crossorigin />
+
+    <meta property="og:type" content={isHome ? 'profile' : 'website'} />
+    <meta property="og:site_name" content={site.name} />
+    <meta property="og:title" content={fullTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    {person && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
+
+    <!-- Theme before first paint, so there is no flash. -->
+    <script is:inline>
+      (function () {
+        var d = document.documentElement;
+        d.classList.add('js');
+        try {
+          var t = localStorage.getItem('theme');
+          if (t === 'light' || t === 'dark') d.dataset.theme = t;
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <a class="skip" href="#main">Skip to content</a>
+    <Field />
+    <Header isHome={isHome} />
+    <main id="main">
+      <slot />
+    </main>
+    <Footer />
+    <script>
+      import '../scripts/site';
+    </script>
+  </body>
+</html>
