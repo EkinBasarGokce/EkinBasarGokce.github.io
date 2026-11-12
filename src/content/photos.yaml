@@ -11,17 +11,18 @@
 
 # Stage
 - id: spamalot
-  order: 10
+  order: 30
   file: stage/spamalot.jpg
-  alt: Spamalot on stage, actors in knight costumes under blue light
+  alt: Monty Python and The Holy Grail on stage, actors in knight costumes under blue light
+  caption: Monty Python and The Holy Grail
   credit: ""
 - id: gasteciler-1
-  order: 20
+  order: 10
   file: stage/gasteciler-1.jpg
   alt: Gasteciler, a newsboy in a flat cap and braces sings at a railing
   caption: Gasteciler
 - id: gasteciler-2
-  order: 30
+  order: 20
   file: stage/gasteciler-2.jpg
   alt: Gasteciler, a newsboy in a flat cap sits on a railing, reading
   caption: Gasteciler
@@ -52,6 +53,10 @@
   order: 30
   file: posters/gasteciler.jpg
   alt: "Poster for Gasteciler, a newsboy leaping across a wall of newspaper pages"
+- id: poster-monty
+  order: 35
+  file: posters/monty-python.jpg
+  alt: "Poster for Monty Python and The Holy Grail, knights marching past a castle under the big title"
 - id: poster-son-romanov
   order: 40
   file: posters/son-romanov.jpg

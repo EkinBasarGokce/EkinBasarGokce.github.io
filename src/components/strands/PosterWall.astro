@@ -1,10 +1,11 @@
 ---
 /**
- * Stage as a wall of posters, one per production, with the role and year
- * underneath. An entry can carry:
- *   poster -> the real show poster (photos.yaml id), shown as artwork
- *   photo  -> a stage photo, with the title printed over it
- *   tone   -> no image: a poster set in type, in a colour scheme for the show
+ * Stage, organised: one straight row of posters grouped by role (Directed,
+ * Assistant director, On stage), then a row of photos from the shows.
+ * Every poster and photo is the same size and opens full size on click.
+ *
+ * An entry can carry a real show poster (`poster`, a photos.yaml id); without
+ * one it gets a poster set in type in its `tone` colours.
  */
 import { Picture } from 'astro:assets';
 import type { GetImageResult } from 'astro';
@@ -19,117 +20,145 @@ interface Entry {
   poster?: string;
   tone?: string;
 }
+type Img = { p: Photo; full: GetImageResult };
 interface Props {
   entries: Entry[];
-  photos: Map<string, { p: Photo; full: GetImageResult }>;
+  photos: Map<string, Img>;
+  /** photos from the shows, shown in a row under the posters */
+  stills?: Img[];
 }
-const { entries, photos } = Astro.props;
+const { entries, photos, stills = [] } = Astro.props;
+
+// group consecutive entries that share a role
+const label: Record<string, string> = { Director: 'Directed', 'Assistant director': 'Assistant director', Actor: 'On stage' };
+const groups: { role: string; items: Entry[] }[] = [];
+for (const e of entries) {
+  const role = e.role ?? '';
+  const last = groups.at(-1);
+  if (last && last.role === role) last.items.push(e);
+  else groups.push({ role, items: [e] });
+}
 ---
 
-<ul class="wall" role="list" data-stagger>
-  {entries.map((e) => {
-    const real = e.poster ? photos.get(e.poster) : undefined;
-    const ph = !real && e.photo ? photos.get(e.photo) : undefined;
-    const img = real ?? ph;
-    const credit = ph ? photoLine(ph.p) : '';
-    const caption = [e.title, e.role, e.when].filter(Boolean).join(' · ');
-    return (
-      <li class="poster reveal">
-        <div class:list={['card', { photo: !!ph, real: !!real }]} data-tone={e.tone ?? 'royal'}>
-          {img ? (
-            <a class="art" href={img.full.src} data-lightbox data-alt={img.p.alt} data-caption={credit ? `${caption} · ${credit}` : caption}>
-              <Picture src={img.p.src} alt={img.p.alt} formats={['avif', 'webp']} widths={[360, 720]} sizes="(min-width: 80rem) 17rem, 60vw" />
+<div class="stage-board">
+  <div class="wall" style={`--n:${entries.length}`}>
+    {groups.map((g) => (
+      <section class="group" style={`--k:${g.items.length}`} aria-label={label[g.role] ?? g.role}>
+        <p class="label">{label[g.role] ?? g.role}</p>
+        <ul role="list">
+          {g.items.map((e) => {
+            const img = (e.poster && photos.get(e.poster)) || (e.photo && photos.get(e.photo)) || undefined;
+            const caption = [e.title, e.role, e.when].filter(Boolean).join(' · ');
+            return (
+              <li class="poster reveal">
+                <div class="card" data-tone={e.tone ?? 'royal'}>
+                  {img ? (
+                    <a class="art" href={img.full.src} data-lightbox data-alt={img.p.alt} data-caption={caption}>
+                      <Picture src={img.p.src} alt={img.p.alt} formats={['avif', 'webp']} widths={[300, 600]} sizes="(min-width: 80rem) 11rem, 9rem" />
+                    </a>
+                  ) : (
+                    <div class="art type">
+                      <p class="t">{e.title}</p>
+                    </div>
+                  )}
+                </div>
+                <p class="cap">
+                  <span class="name">{e.title}</span>
+                  {e.when && <span class="year">{e.when}</span>}
+                </p>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    ))}
+  </div>
+
+  {stills.length > 0 && (
+    <section class="stills" aria-label="From the stage">
+      <p class="label">From the stage</p>
+      <ul role="list">
+        {stills.map(({ p, full }) => (
+          <li class="reveal">
+            <a href={full.src} data-lightbox data-alt={p.alt} data-caption={photoLine(p)}>
+              <Picture src={p.src} alt={p.alt} formats={['avif', 'webp']} widths={[400, 800]} sizes="(min-width: 64rem) 22rem, 70vw" />
             </a>
-          ) : (
-            <span class="art pattern" aria-hidden="true"></span>
-          )}
-          {!real && (
-            <div class="type">
-              <p class="title">{e.title}</p>
-              {e.detail && <p class="detail">{e.detail}</p>}
-              {credit && <p class="credit">{credit}</p>}
-            </div>
-          )}
-        </div>
-        <p class="cap">
-          {real && <span class="name">{e.title}</span>}
-          <span class="role">{[e.role, e.when].filter(Boolean).join(' · ')}</span>
-        </p>
-      </li>
-    );
-  })}
-</ul>
+            {photoLine(p) && <p class="cap">{photoLine(p)}</p>}
+          </li>
+        ))}
+      </ul>
+    </section>
+  )}
+</div>
 
 <style>
-  .wall {
-    list-style: none;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: var(--space-l) var(--space-m);
+  .stage-board { display: grid; gap: var(--space-xl); }
+  .label {
+    font-size: var(--step--1);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--hue-ink, var(--muted));
+    padding-bottom: 0.5rem;
+    margin-bottom: var(--space-s);
+    border-bottom: 1px solid var(--rule-strong);
   }
-  .poster { display: grid; gap: 0.6rem; align-content: start; }
+
+  /* one row, equal columns; each role group spans as many columns as it has posters */
+  .wall {
+    display: grid;
+    grid-template-columns: repeat(var(--n), minmax(0, 1fr));
+    column-gap: var(--space-s);
+  }
+  .group { grid-column: span var(--k); display: grid; grid-template-columns: subgrid; align-content: start; }
+  .group .label { grid-column: 1 / -1; }
+  .group ul { grid-column: 1 / -1; display: grid; grid-template-columns: subgrid; list-style: none; padding: 0; }
+
+  .poster { display: grid; gap: 0.55rem; align-content: start; }
   .card {
     position: relative;
-    container-type: inline-size;
     aspect-ratio: 1 / 1.414; /* A-series poster */
-    border-radius: 0.3rem;
+    border-radius: 0.25rem;
     overflow: hidden;
-    color: var(--fg);
-    background: var(--bg);
-    box-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.75), inset 0 0 0 1px rgb(255 255 255 / 0.06);
-    transition: translate 0.4s var(--ease-out), rotate 0.4s var(--ease-out), box-shadow 0.4s ease;
+    background: var(--bg, #222);
+    color: var(--fg, #fff);
+    box-shadow: 0 18px 40px -22px rgb(0 0 0 / 0.7), inset 0 0 0 1px rgb(255 255 255 / 0.06);
+    transition: translate 0.35s var(--ease-out), box-shadow 0.35s ease;
   }
-  .poster:nth-child(odd) .card { rotate: -0.6deg; }
-  .poster:nth-child(even) .card { rotate: 0.7deg; }
   @media (hover: hover) and (pointer: fine) {
-    .poster:hover .card { translate: 0 -8px; rotate: 0deg; box-shadow: 0 34px 70px -24px rgb(0 0 0 / 0.85); }
+    .poster:hover .card { translate: 0 -6px; box-shadow: 0 28px 50px -22px rgb(0 0 0 / 0.8); }
   }
-
   .art { position: absolute; inset: 0; display: block; }
   .art :global(picture), .art :global(img) { display: block; width: 100%; height: 100%; object-fit: cover; }
-  .photo .art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgb(0 0 0 / 0.35), transparent 30%, transparent 45%, rgb(0 0 0 / 0.88)); pointer-events: none; }
-
-  .type { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 0.9rem; pointer-events: none; }
-  .title {
-    font-family: var(--font-display);
-    font-variation-settings: 'SOFT' 100;
-    font-size: 15cqi; /* sized by the poster's own width */
-    line-height: 0.95;
-    letter-spacing: -0.03em;
-    overflow-wrap: normal;
-  }
-  .detail { margin-top: 0.45rem; font-size: 0.75rem; line-height: 1.35; opacity: 0.85; }
-  .credit { margin-top: 0.4rem; font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; }
-
-  .cap { display: grid; gap: 0.1rem; font-size: var(--step--1); line-height: 1.3; }
-  .cap .name { font-weight: 600; }
-  .cap .role { color: var(--hue-ink, var(--muted)); font-size: 0.8rem; letter-spacing: 0.04em; }
-
-  /* typographic posters, for shows without an image */
-  [data-tone='knight'] { --bg: #0d1a3a; --fg: #fff; }
+  .type { display: flex; align-items: flex-end; padding: 0.8rem; container-type: inline-size; }
+  .t { font-family: var(--font-display); font-size: 16cqi; line-height: 0.95; }
   [data-tone='royal'] { --bg: #16213f; --fg: #e9cf8f; }
-  [data-tone='royal'] .pattern {
-    background:
-      radial-gradient(circle at 50% 30%, rgb(233 207 143 / 0.35), transparent 40%),
-      repeating-radial-gradient(circle at 50% 30%, transparent 0 14px, rgb(233 207 143 / 0.08) 14px 15px),
-      #16213f;
-  }
-  [data-tone='spring'] { --bg: #f5d0dc; --fg: #2b1530; }
-  [data-tone='spring'] .pattern { background: radial-gradient(circle at 20% 60%, #9fd3a9 0 26%, transparent 26.5%), radial-gradient(circle at 70% 70%, #f39bb4 0 22%, transparent 22.5%), linear-gradient(160deg, #f9dfe7, #cfe9d4); }
-  [data-tone='chocolate'] { --bg: #3a1d12; --fg: #f6d58a; }
-  [data-tone='chocolate'] .pattern { background: repeating-linear-gradient(90deg, #4b2617 0 18px, #3a1d12 18px 36px); }
-  [data-tone='news'] { --bg: #111; --fg: #fff; }
 
-  @media (max-width: 80rem) {
+  .cap { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.82rem; line-height: 1.3; }
+  .cap .name { font-weight: 600; }
+  .cap .year { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  .stills ul { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--space-s); }
+  .stills li { display: grid; gap: 0.45rem; }
+  .stills a { display: block; aspect-ratio: 4 / 3; border-radius: 0.35rem; overflow: hidden; background: var(--paper-2); }
+  .stills :global(picture), .stills :global(img) { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; transition: scale 0.5s var(--ease-out); }
+  @media (hover: hover) and (pointer: fine) {
+    .stills a:hover :global(img) { scale: 1.04; }
+  }
+  .stills .cap { color: var(--muted); }
+
+  /* narrower screens: the poster row scrolls sideways, groups stay together */
+  @media (max-width: 64rem) {
     .wall {
-      grid-template-columns: none;
-      grid-auto-flow: column;
-      grid-auto-columns: min(15rem, 62vw);
+      grid-template-columns: repeat(var(--n), 9.5rem);
       overflow-x: auto;
-      scroll-snap-type: x mandatory;
+      scroll-snap-type: x proximity;
       padding-bottom: var(--space-s);
     }
     .poster { scroll-snap-align: start; }
+    /* labels may wrap on narrow columns; keep their underlines level */
+    .group .label { min-height: 2.9em; display: flex; align-items: flex-end; }
+    .stills ul { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: min(16rem, 72vw); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: var(--space-s); }
+    .stills li { scroll-snap-align: start; }
   }
 </style>

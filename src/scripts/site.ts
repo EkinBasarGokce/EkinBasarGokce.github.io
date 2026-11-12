@@ -88,10 +88,6 @@ function strands() {
       delete root.dataset.lean;
       root.style.removeProperty('--lean-hue');
     }
-    const chip = id ? chips.get(id) : null;
-    if (chip && window.matchMedia('(max-width: 40rem)').matches) {
-      chip.scrollIntoView({ inline: 'center', block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
-    }
   };
 
   const io = new IntersectionObserver(

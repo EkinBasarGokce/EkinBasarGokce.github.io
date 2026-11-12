@@ -47,7 +47,7 @@ const showMore = d.more && !(wants('photos') && photos.length === 0);
 const external = (href: string) => /^https?:\/\//.test(href);
 ---
 
-<article id={strand.id} class="strand" data-strand={strand.id} data-hue={d.hue} aria-labelledby={`${strand.id}-title`}>
+<article id={strand.id} class:list={['strand', { 'strand--wide': posters }]} data-strand={strand.id} data-hue={d.hue} aria-labelledby={`${strand.id}-title`}>
   <header class="side reveal">
     <h3 id={`${strand.id}-title`}>{d.title}</h3>
     <span class="bar" aria-hidden="true"></span>
@@ -56,8 +56,6 @@ const external = (href: string) => /^https?:\/\//.test(href);
 
   <div class="main">
     <div class="prose reveal"><Content /></div>
-
-    {posters && <PosterWall entries={d.entries} photos={posterPhotos} />}
 
     {!posters && d.entries.length > 0 && (
       <ul class="ledger entries" role="list" data-stagger>
@@ -78,7 +76,7 @@ const external = (href: string) => /^https?:\/\//.test(href);
 
     {wants('photos') && photos.length === 0 && d.placeholder && <p class="soon">{d.placeholder}</p>}
 
-    {(photos.length > 0 || cards.length > 0) && (
+    {!posters && (photos.length > 0 || cards.length > 0) && (
       <div class="media-row">
         {photos.length > 0 && (
           <ul
@@ -140,6 +138,12 @@ const external = (href: string) => /^https?:\/\//.test(href);
       </div>
     )}
   </div>
+
+  {posters && (
+    <div class="wide">
+      <PosterWall entries={d.entries} photos={posterPhotos} stills={photos} />
+    </div>
+  )}
 </article>
 
 <style>
@@ -152,6 +156,9 @@ const external = (href: string) => /^https?:\/\//.test(href);
     scroll-margin-top: calc(var(--nav-h) + 4rem);
   }
   .side { position: sticky; top: calc(var(--nav-h) + 4.5rem); align-self: start; }
+  /* a full-width row under the strand (Stage's posters); the title stays put */
+  .wide { grid-column: 1 / -1; }
+  .strand--wide .side { position: static; }
   .side h3 { font-size: var(--step-2); }
   .bar {
     display: block;

@@ -20,11 +20,11 @@ entries:
     role: Assistant director
     detail: Turkish adaptation of Newsies.
     poster: poster-gasteciler
-  - title: Spamalot
+  - title: Monty Python and The Holy Grail
     role: Actor
+    when: "2017"
     detail: Monty Python's Spamalot.
-    photo: spamalot
-    tone: knight
+    poster: poster-monty
   - title: Son Romanov
     role: Actor
     detail: Turkish adaptation of Anastasia.
