@@ -113,9 +113,16 @@ const strands = defineCollection({
           when: z.string().optional(),
           detail: z.string().optional(),
           href: z.string().optional(),
+          /** stage posters: a photos.yaml id to print on the poster, or a colour scheme */
+          photo: z.string().optional(),
+          tone: z.enum(['spring', 'chocolate', 'royal', 'news', 'knight']).optional(),
         }),
       )
       .default([]),
+    /** how the strand is laid out at night: film strip, poster wall, band panel, cinema, or a plain list */
+    layout: z.enum(['default', 'film', 'posters', 'band', 'cinema']).default('default'),
+    /** a photos.yaml id shown full width at the top of the strand */
+    cover: z.string().optional(),
     links: z.array(link).default([]),
     /** which media this strand shows; filtered by this strand's id */
     media: z.array(z.enum(['photos', 'videos', 'cards'])).default([]),
@@ -196,6 +203,8 @@ const sections = defineCollection({
       'contact',
       'prose',
     ]),
+    /** big figures with a short label (Off the clock opens with them) */
+    stats: z.array(z.object({ value: z.string(), label: z.string() })).default([]),
     draft: z.boolean().default(false),
   }),
 });

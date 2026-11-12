@@ -47,6 +47,10 @@ _Avoid_: beyond work, hobbies, studio, play
 One creative practice inside Off the clock, with its own sub-heading and chip in the section's sub-nav. The strands are Photography, Stage, Music, Video and Communities.
 _Avoid_: hobby, sub-section, category
 
+**Night**:
+The dark stage look of Off the clock: the page fades from cream into dark (the dusk), stage lights and a spotlight follow the reader, and the header lists the Strands. Contact brings the light back.
+_Avoid_: dark mode (that is the theme toggle)
+
 ### Strands
 
 **Photography**:

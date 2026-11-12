@@ -1,18 +1,22 @@
 ---
 /**
- * Sticky header. Nav items come from the home sections that have a `nav` label,
- * so adding a section with `nav: "Label"` adds it here too.
+ * One solid sticky header. By day it lists the home sections that have a `nav`
+ * label; at night (inside Off the clock) the same slot lists the strands, so
+ * there is never a second sticky bar.
  */
 import { getCollection } from 'astro:content';
 import { site } from '../site';
+import { getPages } from '../lib/pages';
 
 interface Props {
   isHome: boolean;
 }
 const { isHome } = Astro.props;
-const sections = (await getCollection('sections', (s) => !s.data.draft && s.data.nav))
-  .sort((a, b) => a.data.order - b.data.order);
-const items = sections.map((s) => ({ id: s.id, label: s.data.nav!, href: `${isHome ? '' : '/'}#${s.id}` }));
+const base = isHome ? '' : '/';
+const sections = (await getCollection('sections', (s) => !s.data.draft && s.data.nav)).sort((a, b) => a.data.order - b.data.order);
+const items = sections.map((s) => ({ id: s.id, label: s.data.nav!, href: `${base}#${s.id}` }));
+const strands = (await getCollection('strands', (s) => !s.data.draft)).sort((a, b) => a.data.order - b.data.order);
+const pages = await getPages();
 ---
 
 <header class="site-header" data-header>
@@ -22,27 +26,49 @@ const items = sections.map((s) => ({ id: s.id, label: s.data.nav!, href: `${isHo
       <span class="mark-short" aria-hidden="true">{site.shortName}</span>
     </a>
 
-    <nav class="nav" aria-label="Sections">
+    <nav class="nav nav--day" aria-label="Sections">
       <ul role="list">
-        {items.map((it) => (
-          <li><a href={it.href} data-nav-link={it.id}>{it.label}</a></li>
-        ))}
+        {items.map((it) => <li><a href={it.href} data-nav-link={it.id}>{it.label}</a></li>)}
       </ul>
     </nav>
 
+    {isHome && (
+      <nav class="nav nav--night" aria-label="Off the clock">
+        <ul role="list">
+          {strands.map((s) => (
+            <li><a href={`#${s.id}`} data-chip={s.id} data-hue={s.data.hue}>{s.data.title}</a></li>
+          ))}
+          <li><a href="#contact" class="nav-out">Contact</a></li>
+        </ul>
+      </nav>
+    )}
+
     <div class="tools">
-      <button class="theme" type="button" data-theme-toggle aria-label="Switch colour theme" title="Switch colour theme">
-        <span class="orb" aria-hidden="true"></span>
+      <button class="theme" type="button" data-theme-toggle aria-label="Switch between light and dark" title="Light or dark">
+        <svg class="sun" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="12" cy="12" r="4.3" />
+          <path d="M12 2.6v2.3M12 19.1v2.3M2.6 12h2.3M19.1 12h2.3M5.3 5.4l1.6 1.6M17.1 17l1.6 1.6M5.3 18.6l1.6-1.6M17.1 7l1.6-1.6" />
+        </svg>
+        <svg class="moon" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M19.6 14.6A7.8 7.8 0 0 1 9.4 4.4a7.9 7.9 0 1 0 10.2 10.2Z" />
+        </svg>
       </button>
       <button class="menu-btn" type="button" popovertarget="menu" aria-label="Open menu">Menu</button>
     </div>
   </div>
 
   <div id="menu" class="menu" popover>
-    <nav aria-label="Sections">
+    <nav aria-label="Site">
       <ul role="list">
         {items.map((it) => <li><a href={it.href}>{it.label}</a></li>)}
-        {site.pages.map((p) => <li class="menu-page"><a href={p.href}>{p.label}</a></li>)}
+      </ul>
+      {isHome && (
+        <ul role="list" class="menu-strands">
+          {strands.map((s) => <li><a href={`#${s.id}`}><span class="dot" data-hue={s.data.hue}></span>{s.data.title}</a></li>)}
+        </ul>
+      )}
+      <ul role="list" class="menu-pages">
+        {pages.map((p) => <li><a href={p.href}>{p.label}</a></li>)}
       </ul>
     </nav>
     <button class="menu-close" type="button" popovertarget="menu" popovertargetaction="hide">Close</button>
@@ -56,17 +82,11 @@ const items = sections.map((s) => ({ id: s.id, label: s.data.nav!, href: `${isHo
     z-index: 20;
     height: var(--nav-h);
     background: var(--nav-bg);
-    border-bottom: 1px solid transparent;
-    transition: border-color 0.3s ease, background-color 0.3s ease;
+    color: var(--ink);
+    border-bottom: 1px solid var(--rule);
+    transition: background-color 0.9s var(--ease-in-out), color 0.9s var(--ease-in-out), border-color 0.9s ease;
   }
-  .site-header[data-scrolled] { border-bottom-color: var(--rule); }
-  .bar {
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-m);
-  }
+  .bar { height: 100%; display: flex; align-items: center; justify-content: space-between; gap: var(--space-m); }
   .mark {
     font-family: var(--font-display);
     font-variation-settings: 'SOFT' 100;
@@ -78,82 +98,89 @@ const items = sections.map((s) => ({ id: s.id, label: s.data.nav!, href: `${isHo
   }
   .mark-short { display: none; }
 
-  .nav ul { display: flex; gap: 0.25rem; }
+  .nav ul { display: flex; gap: 0.15rem; }
   .nav a {
-    position: relative;
     display: block;
-    padding: 0.45rem 0.85rem;
-    border-radius: 999px;
-    font-size: var(--step--1);
-    font-weight: 500;
+    padding: 0.45rem 0.8rem;
+    font-family: var(--font-mono);
+    font-size: var(--step--2);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
     color: var(--muted);
     text-decoration: none;
+    border-radius: 999px;
     transition: color 0.2s ease, background-color 0.25s ease;
   }
   .nav a:hover { color: var(--ink); }
-  .nav a[aria-current='true'] {
-    color: var(--ink);
-    background: color-mix(in srgb, var(--lean-hue, var(--coral)) 18%, transparent);
+  .nav a[aria-current='true'] { color: var(--ink); background: color-mix(in srgb, var(--hue, var(--accent)) 22%, transparent); }
+  .nav--day a[aria-current='true'] { --hue: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+
+  /* day and night swap the nav in the same slot */
+  .nav--night { display: none; }
+  :global(:root[data-zone='night']) .nav--day { display: none; }
+  :global(:root[data-zone='night']) .nav--night { display: block; animation: swap 0.5s var(--ease-out); }
+  @keyframes swap { from { opacity: 0; translate: 0 -4px; } }
+  .nav--night a::before {
+    content: '';
+    display: inline-block;
+    width: 0.45rem;
+    height: 0.45rem;
+    margin-right: 0.45rem;
+    border-radius: 50%;
+    background: var(--hue);
+    vertical-align: 0.05em;
   }
+  .nav--night .nav-out::before { display: none; }
 
   .tools { display: flex; align-items: center; gap: 0.5rem; }
   .theme {
-    width: 2.25rem;
-    height: 2.25rem;
+    width: 2.4rem;
+    height: 2.4rem;
     display: grid;
     place-items: center;
     border-radius: 50%;
+    color: var(--ink);
+    transition: background-color 0.2s ease, rotate 0.5s var(--ease-out);
   }
-  .orb {
-    width: 1.15rem;
-    height: 1.15rem;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, var(--amber), var(--coral) 55%, var(--mauve));
-    box-shadow: 0 0 0 1px var(--rule-strong);
-    transition: background 0.6s ease, scale 0.3s var(--ease-out);
-  }
-  :global(:root[data-theme='dark']) .orb {
-    background: radial-gradient(circle at 65% 35%, var(--periwinkle), var(--mauve) 60%, #4d4060);
-  }
+  .theme:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); rotate: 20deg; }
+  .theme svg { grid-area: 1 / 1; width: 1.25rem; height: 1.25rem; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; transition: opacity 0.3s ease, scale 0.4s var(--ease-out); }
+  .moon { opacity: 0; scale: 0.6; }
+  :global(:root[data-theme='dark']) .sun { opacity: 0; scale: 0.6; }
+  :global(:root[data-theme='dark']) .moon { opacity: 1; scale: 1; }
   @media (prefers-color-scheme: dark) {
-    :global(:root:not([data-theme='light'])) .orb {
-      background: radial-gradient(circle at 65% 35%, var(--periwinkle), var(--mauve) 60%, #4d4060);
-    }
+    :global(:root:not([data-theme='light'])) .sun { opacity: 0; scale: 0.6; }
+    :global(:root:not([data-theme='light'])) .moon { opacity: 1; scale: 1; }
   }
-  .theme:hover .orb { scale: 1.12; }
 
   .menu-btn {
     display: none;
     padding: 0.4rem 0.9rem;
     border-radius: 999px;
     border: 1px solid var(--rule-strong);
-    font-size: var(--step--1);
-    font-weight: 500;
+    font-family: var(--font-mono);
+    font-size: var(--step--2);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
   }
 
   .menu {
     inset: 0 0 auto auto;
     margin: 0.5rem;
-    width: min(18rem, calc(100vw - 1rem));
+    width: min(19rem, calc(100vw - 1rem));
     padding: var(--space-m);
     border: 1px solid var(--rule);
     border-radius: var(--radius);
     background: var(--paper);
     color: var(--ink);
-    box-shadow: 0 20px 50px rgb(60 40 80 / 0.18);
+    box-shadow: 0 20px 50px rgb(30 20 40 / 0.22);
   }
-  .menu ul { display: grid; gap: 0.15rem; }
-  .menu a {
-    display: block;
-    padding: 0.6rem 0.25rem;
-    font-family: var(--font-display);
-    font-size: var(--step-1);
-    text-decoration: none;
-  }
-  .menu-page:first-of-type { margin-top: var(--space-xs); border-top: 1px solid var(--rule); padding-top: var(--space-xs); }
-  .menu-page a { font-family: var(--font-body); font-size: var(--step-0); color: var(--muted); }
-  .menu-close { margin-top: var(--space-s); font-size: var(--step--1); color: var(--muted); text-decoration: underline; }
-  .menu::backdrop { background: rgb(23 20 26 / 0.18); }
+  .menu ul { display: grid; gap: 0.1rem; }
+  .menu a { display: block; padding: 0.5rem 0.25rem; font-family: var(--font-display); font-size: var(--step-2); text-decoration: none; line-height: 1.1; }
+  .menu-strands, .menu-pages { margin-top: var(--space-xs); padding-top: var(--space-xs); border-top: 1px solid var(--rule); }
+  .menu-strands a, .menu-pages a { font-family: var(--font-body); font-size: var(--step-0); color: var(--muted); }
+  .menu-strands .dot { display: inline-block; width: 0.5rem; height: 0.5rem; border-radius: 50%; background: var(--hue); margin-right: 0.6rem; }
+  .menu-close { margin-top: var(--space-s); font-family: var(--font-mono); font-size: var(--step--2); text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+  .menu::backdrop { background: rgb(13 11 16 / 0.35); }
   @media (prefers-reduced-motion: no-preference) {
     .menu { transition: opacity 0.2s ease, translate 0.25s var(--ease-out), display 0.25s allow-discrete, overlay 0.25s allow-discrete; }
     .menu:popover-open { opacity: 1; translate: 0 0; }
@@ -161,8 +188,8 @@ const items = sections.map((s) => ({ id: s.id, label: s.data.nav!, href: `${isHo
     .menu:not(:popover-open) { opacity: 0; translate: 0 -8px; }
   }
 
-  @media (max-width: 52rem) {
-    .nav { display: none; }
+  @media (max-width: 58rem) {
+    .nav { display: none !important; }
     .menu-btn { display: inline-block; }
   }
   @media (max-width: 26rem) {

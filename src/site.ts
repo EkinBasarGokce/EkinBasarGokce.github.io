@@ -13,12 +13,14 @@ export const site = {
   location: 'İstanbul, Türkiye',
 
   hero: {
-    /** small line above the name; leave empty for none */
-    eyebrow: '',
+    /** the big line under the name; _text_ is printed in negative (the "night" half) */
+    headline: 'Engineer by day, _on stage by night._',
     /** Plain text with [label](href) links. */
-    lede: 'I build software and machine learning systems. I led software development at [Beespenser](#experience), building the desktop app that drives the fast prototyping device. Now I am a PhD student in Computer Science and Engineering at [Sabancı University](#research), working on generative models for drug design.',
+    lede: "I led software development at [Beespenser](#experience), building the desktop app that drives the fast prototyping device. Now I'm a PhD student in Computer Science and Engineering at [Sabancı University](#research), working on generative models for drug design.",
     bridge:
       'Off the clock I [take photographs](#photography), [act in musicals](#stage), [make music](#music), and [film videos](#video).',
+    /** the small line at the bottom of the first screen */
+    cue: 'Keep scrolling. The lights go down at Off the clock.',
   },
 
   /** Shown as labelled rows in Contact. Assembled in the browser to keep scrapers out. */

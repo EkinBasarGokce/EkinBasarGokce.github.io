@@ -7,28 +7,26 @@ import { span } from '../../lib/format';
 interface Props {
   entry: CollectionEntry<'sections'>;
   navId: string;
+  index?: number;
 }
-const { entry, navId } = Astro.props;
+const { entry, navId, index } = Astro.props;
 const items = (await getCollection('education', (e) => !e.data.draft)).sort((a, b) => a.data.order - b.data.order);
 const rows = await Promise.all(items.map(async (e) => ({ e, Content: (await render(e)).Content, hasBody: Boolean(e.body?.trim()) })));
 ---
 
-<Section entry={entry} navId={navId}>
-  <ol class="ledger" role="list" data-stagger>
+<Section entry={entry} navId={navId} index={index}>
+  <ol class="degrees" role="list" data-stagger>
     {rows.map(({ e, Content, hasBody }) => {
       const d = e.data;
-      const dates = span(d.start, d.end);
       return (
         <li class="reveal">
-          <div class="when">
-            <span class="degree">{d.degree}</span>
-            {dates ? <span class="tnum">{d.end === 'present' && !d.start ? 'Ongoing' : dates}</span> : <span class="todo">years</span>}
-          </div>
-          <div>
-            <h3>{d.field}</h3>
+          <span class="degree" aria-hidden="true">{d.degree}</span>
+          <div class="info">
+            <p class="when">{span(d.start, d.end)}</p>
+            <h3><span class="visually-hidden">{d.degree}, </span>{d.field}</h3>
             <p class="meta">{d.institution}</p>
-            {d.focus && <p class="line"><span class="muted">Focus</span> <Text value={d.focus} /></p>}
-            {d.thesis && <p class="line"><span class="muted">Thesis</span> <Text value={d.thesis} /></p>}
+            {d.focus && <p class="line"><span class="mono">Focus</span> <Text value={d.focus} /></p>}
+            {d.thesis && <p class="line"><span class="mono">Thesis</span> <em><Text value={d.thesis} /></em></p>}
             {hasBody && <div class="body"><Content /></div>}
           </div>
         </li>
@@ -38,17 +36,33 @@ const rows = await Promise.all(items.map(async (e) => ({ e, Content: (await rend
 </Section>
 
 <style>
-  .when { display: grid; gap: 0.2rem; align-content: start; }
+  .degrees { list-style: none; padding: 0; display: grid; gap: 0; }
+  .degrees > li {
+    display: grid;
+    grid-template-columns: minmax(8rem, 15rem) minmax(0, 1fr);
+    gap: var(--space-l);
+    align-items: baseline;
+    padding-block: var(--space-l);
+    border-top: 1px solid var(--rule);
+  }
+  .degrees > li:last-child { border-bottom: 1px solid var(--rule); }
   .degree {
     font-family: var(--font-display);
     font-variation-settings: 'SOFT' 100;
-    font-size: var(--step-2);
-    line-height: 1;
-    color: var(--ink);
+    font-style: italic;
+    font-size: var(--step-5);
+    line-height: 0.8;
+    letter-spacing: -0.04em;
+    color: var(--hue-ink);
+    opacity: 0.9;
   }
+  .info h3 { font-size: var(--step-2); margin-top: var(--space-3xs); letter-spacing: -0.02em; }
+  .when { font-size: var(--step--1); color: var(--muted); }
+  .meta { color: var(--muted); }
   .line { margin-top: var(--space-2xs); max-width: var(--measure); }
-  .line .muted { font-size: var(--step--1); text-transform: uppercase; letter-spacing: 0.08em; margin-right: 0.5em; }
+  .line .mono { font-size: var(--step--2); text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-right: 0.6em; }
   @media (max-width: 40rem) {
-    .when { grid-auto-flow: column; justify-content: start; align-items: baseline; gap: 0.75rem; }
+    .degrees > li { grid-template-columns: 1fr; gap: var(--space-2xs); }
+    .degree { font-size: var(--step-4); }
   }
 </style>

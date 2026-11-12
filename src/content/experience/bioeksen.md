@@ -5,7 +5,7 @@ roles:
   - title: Bioinformatician and Python Developer
     start: "2022"
     end: "2022"
-tags: [Python, Bioinformatics, Automation]
+tags: [Python, Bioinformatics]
 order: 40
 ---
-- Built Python pipelines that automate primer design, turning a manual, step-by-step lab task into a fast and repeatable process.
+- Wrote Python pipelines that design PCR primers automatically, a job that used to be done by hand.

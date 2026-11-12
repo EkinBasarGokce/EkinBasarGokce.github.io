@@ -7,7 +7,7 @@ roles:
   - title: Research Intern
     start: "2021"
     end: "2021"
-tags: [Deep learning, Proteomics, Python]
+tags: [Deep learning, Proteomics]
 order: 60
 ---
-- Fine-tuned Prosit, a deep neural network for proteomics, with refinement learning: data cleaning, data preparation and model training.
+- Fine-tuned Prosit, a deep learning model for proteomics.

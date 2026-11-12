@@ -1,5 +1,7 @@
 ---
 import { site, isTodo } from '../site';
+import { getPages } from '../lib/pages';
+const pages = await getPages();
 const year = new Date().getFullYear();
 const socials = site.socials.filter((s) => !isTodo(s.href));
 ---
@@ -7,13 +9,13 @@ const socials = site.socials.filter((s) => !isTodo(s.href));
 <footer class="site-footer">
   <div class="wrap foot">
     <figure class="sign">
-      <canvas class="face-small" data-doodle="small" width="96" height="96" role="img" aria-label="A small hand-drawn face"></canvas>
+      <canvas class="face-small" data-doodle="small" width="128" height="128" role="img" aria-label="A small hand-drawn face"></canvas>
       <figcaption class="small muted">Drawn by a little sketch engine.<br />A new face every visit.</figcaption>
     </figure>
 
     <nav aria-label="Pages" class="foot-nav">
       <ul class="links" role="list">
-        {site.pages.map((p) => <li><a href={p.href}>{p.label}</a></li>)}
+        {pages.map((p) => <li><a class="pen" href={p.href}>{p.label}</a></li>)}
         {socials.map((s) => <li><a class="out" href={s.href} rel="me noopener" target="_blank">{s.label}</a></li>)}
       </ul>
       <p class="small muted">© {year} {site.name} · Built with Astro, hosted on GitHub Pages.</p>
@@ -33,7 +35,7 @@ const socials = site.socials.filter((s) => !isTodo(s.href));
     padding-top: var(--space-l);
   }
   .sign { display: flex; align-items: center; gap: var(--space-s); }
-  .face-small { width: 64px; height: 64px; }
+  .face-small { width: 104px; height: 104px; }
   .foot-nav { display: grid; gap: var(--space-xs); justify-items: end; text-align: right; }
   .foot-nav .links { justify-content: flex-end; font-size: var(--step--1); }
   @media (max-width: 40rem) {

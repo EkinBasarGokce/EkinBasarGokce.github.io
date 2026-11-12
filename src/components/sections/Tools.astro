@@ -1,31 +1,41 @@
 ---
+/** A short, curated list: one column per group, plain type instead of pills. */
 import { getCollection, type CollectionEntry } from 'astro:content';
 import Section from '../Section.astro';
 
 interface Props {
   entry: CollectionEntry<'sections'>;
   navId: string;
+  index?: number;
 }
-const { entry, navId } = Astro.props;
+const { entry, navId, index } = Astro.props;
 const groups = (await getCollection('tools')).sort((a, b) => a.data.order - b.data.order);
 const hues = ['coral', 'amber', 'mauve', 'periwinkle'] as const;
 ---
 
-<Section entry={entry} navId={navId}>
-  <ul class="ledger tools" role="list" data-stagger>
+<Section entry={entry} navId={navId} index={index}>
+  <div class="stack" data-stagger>
     {groups.map((g, i) => (
-      <li class="reveal">
-        <p class="when label">{g.data.label}</p>
-        <ul class="chips" role="list">
-          {g.data.items.map((t) => <li class="chip" data-hue={hues[i % hues.length]}>{t}</li>)}
+      <div class="group reveal" data-hue={hues[i % hues.length]}>
+        <p class="label">{g.data.label}</p>
+        <ul role="list">
+          {g.data.items.map((t) => <li>{t}</li>)}
         </ul>
-      </li>
+      </div>
     ))}
-  </ul>
+  </div>
 </Section>
 
 <style>
-  .tools > li { padding-block: var(--space-s); align-items: center; }
-  .label { color: var(--ink); font-weight: 500; padding-top: 0; }
-  .tools .chips { margin-top: 0; }
+  .stack { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); gap: var(--space-l); }
+  .group { border-top: 2px solid var(--hue); padding-top: var(--space-s); }
+  .label { font-size: var(--step--2); text-transform: uppercase; letter-spacing: 0.12em; color: var(--hue-ink); margin-bottom: var(--space-s); }
+  .group ul { list-style: none; padding: 0; display: grid; gap: 0.15rem; }
+  .group li {
+    font-family: var(--font-display);
+    font-variation-settings: 'SOFT' 100;
+    font-size: var(--step-2);
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+  }
 </style>

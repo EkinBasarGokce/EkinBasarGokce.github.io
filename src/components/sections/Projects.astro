@@ -1,72 +1,121 @@
 ---
+/** Projects: the first one (lowest order) is featured large; the rest follow in a row. */
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import Section from '../Section.astro';
+import { board } from '../../lib/toolpath';
 
 interface Props {
   entry: CollectionEntry<'sections'>;
   navId: string;
+  index?: number;
 }
-const { entry, navId } = Astro.props;
+const { entry, navId, index } = Astro.props;
 const items = (await getCollection('projects', (p) => !p.data.draft)).sort((a, b) => a.data.order - b.data.order);
 const cards = await Promise.all(items.map(async (p) => ({ p, Content: (await render(p)).Content, hasBody: Boolean(p.body?.trim()) })));
+const [lead, ...rest] = cards;
+const b = board(11);
 ---
 
-<Section entry={entry} navId={navId}>
-  <ul class="projects" role="list" data-stagger>
-    {cards.map(({ p, Content, hasBody }) => (
-      <li class="panel project glow reveal" data-hue={p.data.hue}>
-        <div class="top">
-          <h3>{p.data.title}</h3>
-          {p.data.year && <span class="small muted tnum">{p.data.year}</span>}
-        </div>
+<Section entry={entry} navId={navId} index={index}>
+  {lead && (
+    <article class="feature reveal" data-hue={lead.p.data.hue}>
+      <div class="feature-text">
+        <p class="eyebrow"><span class="num">01</span><span class="line" aria-hidden="true"></span><span>{lead.p.data.year}</span></p>
+        <h3>{lead.p.data.title}</h3>
+        <p class="summary">{lead.p.data.summary}</p>
+        {lead.hasBody && <div class="more"><lead.Content /></div>}
+        {lead.p.data.tags.length > 0 && (
+          <ul class="chips" role="list">{lead.p.data.tags.map((t) => <li class="chip">{t}</li>)}</ul>
+        )}
+        {lead.p.data.links.length > 0 && (
+          <ul class="links small" role="list">
+            {lead.p.data.links.map((l) => <li><a class="pen out" href={l.href} target="_blank" rel="noopener">{l.label}</a></li>)}
+          </ul>
+        )}
+      </div>
+      <svg class="board" viewBox={`0 0 ${b.w} ${b.h}`} role="img" aria-label="A drawing of circuit-board traces, like the toolpaths the machine dispenses">
+        <defs>
+          <pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="1" /></pattern>
+        </defs>
+        <rect class="grid" width={b.w} height={b.h} fill="url(#dots)" />
+        {b.chips.map((c) => <rect class="ic" x={c.x} y={c.y} width={c.w} height={c.h} rx="6" />)}
+        {b.traces.map((d, i) => <path class="trace" d={d} pathLength="1" style={`--i:${i}`} />)}
+        {b.pads.map((p, i) => <circle class="pad" cx={p.x} cy={p.y} r={p.r} style={`--i:${i}`} />)}
+      </svg>
+    </article>
+  )}
+
+  <div class="rest">
+    {rest.map(({ p, Content, hasBody }, i) => (
+      <article class="card reveal" data-hue={p.data.hue}>
+        <p class="eyebrow"><span class="num">{String(i + 2).padStart(2, '0')}</span><span class="line" aria-hidden="true"></span><span>{p.data.year}</span></p>
+        <h3>{p.data.title}</h3>
         <p>{p.data.summary}</p>
         {hasBody && <div class="more small"><Content /></div>}
         <div class="foot">
-          {p.data.tags.length > 0 && (
-            <ul class="chips" role="list">
-              {p.data.tags.map((t) => <li class="chip">{t}</li>)}
-            </ul>
-          )}
+          {p.data.tags.length > 0 && <ul class="chips" role="list">{p.data.tags.map((t) => <li class="chip">{t}</li>)}</ul>}
           {p.data.links.length > 0 && (
             <ul class="links small" role="list">
-              {p.data.links.map((l) => (
-                <li><a class="out" href={l.href} target="_blank" rel="noopener">{l.label}</a></li>
-              ))}
+              {p.data.links.map((l) => <li><a class="pen out" href={l.href} target="_blank" rel="noopener">{l.label}</a></li>)}
             </ul>
           )}
         </div>
-      </li>
+      </article>
     ))}
-  </ul>
+  </div>
 </Section>
 
 <style>
-  .projects {
-    list-style: none;
-    padding: 0;
+  .eyebrow { display: flex; align-items: center; gap: 0.8em; margin-bottom: var(--space-s); }
+  .eyebrow .num { color: var(--hue-ink); }
+  .eyebrow .line { width: 2rem; height: 1px; background: currentColor; opacity: 0.5; }
+
+  .feature {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr));
-    gap: var(--space-s);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+    gap: var(--space-xl);
+    align-items: center;
+    padding: var(--space-xl);
+    border: 1px solid var(--rule);
+    border-radius: calc(var(--radius) * 1.5);
+    background: var(--panel);
   }
-  .project {
+  .feature h3 { font-size: var(--step-4); line-height: 0.95; letter-spacing: -0.03em; font-weight: 400; }
+  .summary { margin-top: var(--space-m); font-size: var(--step-1); line-height: 1.45; max-width: 30ch; }
+  .feature .chips, .feature .links { margin-top: var(--space-m); }
+
+  .board { width: 100%; height: auto; overflow: visible; }
+  #dots circle { fill: var(--rule-strong); }
+  .board .ic { fill: color-mix(in srgb, var(--ink) 88%, transparent); }
+  .board .trace { fill: none; stroke: var(--amber-ink); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+  .board .trace:nth-child(3n) { stroke: var(--coral-ink); }
+  .board .pad { fill: var(--paper); stroke: var(--ink); stroke-width: 2.2; }
+
+  .rest { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 20rem), 1fr)); gap: var(--space-m); margin-top: var(--space-m); }
+  .card {
     display: flex;
     flex-direction: column;
     gap: var(--space-xs);
-    transition: border-color 0.25s ease, translate 0.25s var(--ease-out);
+    padding: var(--space-l);
+    border: 1px solid var(--rule);
+    border-radius: calc(var(--radius) * 1.5);
+    background: var(--panel);
+    transition: border-color 0.3s ease, translate 0.3s var(--ease-out);
   }
-  .project::after {
-    content: '';
-    position: absolute;
-    top: var(--space-m);
-    right: var(--space-m);
-    width: 0.6rem;
-    height: 0.6rem;
-    border-radius: 50%;
-    background: var(--hue);
-  }
-  .top { display: flex; align-items: baseline; justify-content: space-between; gap: var(--space-s); padding-right: var(--space-m); }
-  .foot { margin-top: auto; display: grid; gap: var(--space-xs); padding-top: var(--space-2xs); }
+  .card h3 { font-size: var(--step-3); line-height: 1; letter-spacing: -0.025em; font-weight: 400; }
+  .card .foot { margin-top: auto; display: grid; gap: var(--space-xs); padding-top: var(--space-s); }
   @media (hover: hover) and (pointer: fine) {
-    .project:hover { border-color: color-mix(in srgb, var(--hue) 55%, transparent); translate: 0 -2px; }
+    .card:hover { border-color: color-mix(in srgb, var(--accent) 50%, transparent); translate: 0 -3px; }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    :global(html.js) .board .trace { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.4s var(--ease-in-out); transition-delay: calc(var(--i) * 90ms + 200ms); }
+    :global(html.js) .feature.in .board .trace { stroke-dashoffset: 0; }
+    :global(html.js) .board .pad { scale: 0; transform-box: fill-box; transform-origin: center; transition: scale 0.4s var(--ease-out); transition-delay: calc(var(--i) * 50ms + 300ms); }
+    :global(html.js) .feature.in .board .pad { scale: 1; }
+  }
+
+  @media (max-width: 56rem) {
+    .feature { grid-template-columns: 1fr; padding: var(--space-l); }
   }
 </style>

@@ -11,5 +11,5 @@ const strokes = inkRule(hashSeed(seed));
 ---
 
 <svg class:list={['rule', cls]} viewBox="0 0 640 14" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-  {strokes.map((s) => <path d={s.d} stroke-width={s.width} opacity={s.opacity} />)}
+  {strokes.map((s) => <path d={s.d} stroke-width={s.width} opacity={s.opacity} pathLength="1" />)}
 </svg>

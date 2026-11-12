@@ -1,7 +1,8 @@
 /**
  * Site behaviours. No libraries. Everything degrades to a plain, readable page.
- *   reveal on scroll, nav scrollspy, Off-the-clock lean, theme toggle,
- *   mobile menu, email assembly + copy, YouTube facades, photo lightbox.
+ *   reveal on scroll, nav scrollspy, day/night zone, spotlight,
+ *   Off-the-clock lean, theme toggle, mobile menu, email assembly + copy,
+ *   YouTube facades, photo lightbox.
  */
 const root = document.documentElement;
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -11,7 +12,7 @@ function reveal() {
   document.querySelectorAll<HTMLElement>('[data-stagger]').forEach((list) => {
     Array.from(list.children).forEach((el, i) => (el as HTMLElement).style.setProperty('--i', String(i)));
   });
-  const items = document.querySelectorAll<HTMLElement>('.reveal');
+  const items = document.querySelectorAll<HTMLElement>('.reveal, .head, .feature');
   if (reduce || !('IntersectionObserver' in window)) {
     items.forEach((el) => el.classList.add('in'));
     return;
@@ -28,28 +29,19 @@ function reveal() {
     { rootMargin: '0px 0px -8% 0px', threshold: 0 },
   );
   items.forEach((el) => io.observe(el));
-  // back/forward cache: show everything rather than replaying
   window.addEventListener('pageshow', (e) => {
     if (e.persisted) items.forEach((el) => el.classList.add('in'));
   });
 }
 
-/* ── Header: hairline after scrolling, active section ──────────── */
+/* ── Header: active section ────────────────────────────────────── */
 function header() {
-  const bar = document.querySelector<HTMLElement>('[data-header]');
-  if (!bar) return;
-  const onScroll = () => bar.toggleAttribute('data-scrolled', window.scrollY > 8);
-  onScroll();
-  window.addEventListener('scroll', onScroll, { passive: true });
-
   const links = new Map<string, HTMLAnchorElement>();
   document.querySelectorAll<HTMLAnchorElement>('[data-nav-link]').forEach((a) => links.set(a.dataset.navLink!, a));
   const sections = document.querySelectorAll<HTMLElement>('section[data-nav]');
   if (!links.size || !sections.length) return;
 
-  const setActive = (id: string | null) => {
-    links.forEach((a, key) => a.setAttribute('aria-current', String(key === id)));
-  };
+  const setActive = (id: string | null) => links.forEach((a, key) => a.setAttribute('aria-current', String(key === id)));
   const io = new IntersectionObserver(
     (entries) => {
       for (const e of entries) if (e.isIntersecting) setActive((e.target as HTMLElement).dataset.nav!);
@@ -57,43 +49,73 @@ function header() {
     { rootMargin: '-40% 0px -55% 0px' },
   );
   sections.forEach((s) => io.observe(s));
-  // at the very bottom, the last section wins even if it is short
-  window.addEventListener(
-    'scroll',
-    () => {
-      if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 4) {
-        setActive(sections[sections.length - 1].dataset.nav!);
-      } else if (window.scrollY < 200) {
-        setActive(null);
-      }
-    },
-    { passive: true },
-  );
+  window.addEventListener('scroll', () => {
+    if (window.innerHeight + window.scrollY >= document.body.scrollHeight - 4) setActive(sections[sections.length - 1].dataset.nav!);
+    else if (window.scrollY < 200) setActive(null);
+  }, { passive: true });
 }
 
-/* ── Off the clock: chips follow the strand, the field leans ───── */
+/* ── Day and night ─────────────────────────────────────────────────
+ * The header turns dark (and lists the strands) once the dark part of a
+ * night section reaches it, and turns back when the night is over.
+ */
+function zone() {
+  const nights = Array.from(document.querySelectorAll<HTMLElement>('[data-night]'));
+  if (!nights.length) return;
+  const navH = () => document.querySelector<HTMLElement>('[data-header]')?.offsetHeight ?? 60;
+  let raf = 0;
+  const update = () => {
+    raf = 0;
+    const h = navH();
+    const inNight = nights.some((s) => {
+      const r = s.getBoundingClientRect();
+      const dusk = s.querySelector<HTMLElement>('[data-dusk]')?.offsetHeight ?? 0;
+      return r.top + dusk * 0.85 <= h && r.bottom > h;
+    });
+    if (inNight) root.dataset.zone = 'night';
+    else delete root.dataset.zone;
+  };
+  const queue = () => { if (!raf) raf = requestAnimationFrame(update); };
+  window.addEventListener('scroll', queue, { passive: true });
+  window.addEventListener('resize', queue);
+  update();
+}
+
+/* ── The spotlight follows the pointer at night ────────────────── */
+function spotlight() {
+  const fields = Array.from(document.querySelectorAll<HTMLElement>('[data-night-field]'));
+  if (!fields.length || reduce || !matchMedia('(hover: hover)').matches) return;
+  let raf = 0;
+  let x = 0;
+  let y = 0;
+  window.addEventListener('pointermove', (e) => {
+    x = e.clientX;
+    y = e.clientY;
+    if (raf) return;
+    raf = requestAnimationFrame(() => {
+      raf = 0;
+      for (const f of fields) {
+        const r = f.getBoundingClientRect();
+        f.style.setProperty('--sx', `${x - r.left}px`);
+        f.style.setProperty('--sy', `${y - r.top}px`);
+      }
+    });
+  }, { passive: true });
+}
+
+/* ── Off the clock: the header follows the strand, the lights lean ─ */
 function strands() {
-  const block = document.querySelector<HTMLElement>('[data-strands]');
+  const block = document.querySelector<HTMLElement>('#off-the-clock');
   if (!block) return;
   const chips = new Map<string, HTMLAnchorElement>();
-  block.querySelectorAll<HTMLAnchorElement>('[data-chip]').forEach((a) => chips.set(a.dataset.chip!, a));
+  document.querySelectorAll<HTMLAnchorElement>('[data-chip]').forEach((a) => chips.set(a.dataset.chip!, a));
   const arts = block.querySelectorAll<HTMLElement>('[data-strand]');
 
   const lean = (id: string | null, hue: string | null) => {
     chips.forEach((a, key) => a.setAttribute('aria-current', String(key === id)));
-    if (hue) {
-      root.dataset.lean = hue;
-      root.style.setProperty('--lean-hue', `var(--${hue === 'ink' ? 'periwinkle' : hue})`);
-    } else {
-      delete root.dataset.lean;
-      root.style.removeProperty('--lean-hue');
-    }
-    const chip = id ? chips.get(id) : null;
-    if (chip && window.matchMedia('(max-width: 40rem)').matches) {
-      chip.scrollIntoView({ inline: 'center', block: 'nearest', behavior: reduce ? 'auto' : 'smooth' });
-    }
+    if (hue) root.dataset.lean = hue;
+    else delete root.dataset.lean;
   };
-
   const io = new IntersectionObserver(
     (entries) => {
       for (const e of entries) {
@@ -106,14 +128,7 @@ function strands() {
     { rootMargin: '-35% 0px -55% 0px' },
   );
   arts.forEach((a) => io.observe(a));
-
-  // leaving the whole section turns the lean off
-  new IntersectionObserver(
-    ([e]) => {
-      if (!e.isIntersecting) lean(null, null);
-    },
-    { threshold: 0 },
-  ).observe(block);
+  new IntersectionObserver(([e]) => { if (!e.isIntersecting) lean(null, null); }, { threshold: 0 }).observe(block);
 }
 
 /* ── Theme toggle ──────────────────────────────────────────────── */
@@ -124,8 +139,7 @@ function theme() {
       const current = root.dataset.theme ?? (dark.matches ? 'dark' : 'light');
       const next = current === 'dark' ? 'light' : 'dark';
       // when the choice matches the system, forget it so the system leads again
-      const system = dark.matches ? 'dark' : 'light';
-      if (next === system) {
+      if (next === (dark.matches ? 'dark' : 'light')) {
         delete root.dataset.theme;
         try { localStorage.removeItem('theme'); } catch {}
       } else {
@@ -199,7 +213,6 @@ function lightbox() {
   const cap = dlg.querySelector('figcaption')!;
   const links = Array.from(document.querySelectorAll<HTMLAnchorElement>('[data-lightbox]'));
   let at = 0;
-
   const show = (i: number) => {
     at = (i + links.length) % links.length;
     const a = links[at];
@@ -207,19 +220,11 @@ function lightbox() {
     img.alt = a.dataset.alt ?? '';
     cap.textContent = a.dataset.caption ?? '';
   };
-  links.forEach((a, i) =>
-    a.addEventListener('click', (e) => {
-      e.preventDefault();
-      show(i);
-      dlg.showModal();
-    }),
-  );
+  links.forEach((a, i) => a.addEventListener('click', (e) => { e.preventDefault(); show(i); dlg.showModal(); }));
   dlg.querySelector('[data-prev]')?.addEventListener('click', () => show(at - 1));
   dlg.querySelector('[data-next]')?.addEventListener('click', () => show(at + 1));
   dlg.querySelector('[data-close]')?.addEventListener('click', () => dlg.close());
-  dlg.addEventListener('click', (e) => {
-    if (e.target === dlg) dlg.close();
-  });
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
   dlg.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowLeft') show(at - 1);
     if (e.key === 'ArrowRight') show(at + 1);
@@ -236,6 +241,8 @@ function lightbox() {
 
 reveal();
 header();
+zone();
+spotlight();
 strands();
 theme();
 menu();

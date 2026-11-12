@@ -1,5 +1,8 @@
 /*
  * The light field: cream paper with soft coloured light behind it.
+ * At night (Off the clock) the paper goes dark, the colours become stage
+ * lights, and a warm spotlight follows the pointer.
+ *
  * Performance rules (measured on throttled phone emulation):
  *   - no filter: blur() anywhere; the softness is the gradient's eased stops
  *   - only transform and opacity animate
@@ -14,7 +17,7 @@
   pointer-events: none;
   contain: strict;
   background: var(--paper);
-  transition: background-color 0.6s ease;
+  transition: background-color 0.9s var(--ease-in-out);
 }
 .bg__field { position: absolute; inset: 0; }
 
@@ -40,8 +43,6 @@
   );
 }
 
-/* Composition after the mood image: coral high, an amber streak from the left,
-   rose-mauve low right, a small pale periwinkle below. */
 .blob--coral      { --c: var(--coral);      --x: 58%; --y: 24%; --w: 64vmax; --h: 44vmax; --d: 88s; }
 .blob--amber      { --c: var(--amber);      --x: 18%; --y: 44%; --w: 62vmax; --h: 28vmax; --d: 104s; }
 .blob--mauve      { --c: var(--mauve);      --x: 80%; --y: 70%; --w: 56vmax; --h: 46vmax; --d: 96s; }
@@ -64,13 +65,29 @@
   background-size: 200px 200px;
 }
 
+/* The spotlight: a warm cone of light, moved with transform only. */
+.spot {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 70vmax;
+  height: 70vmax;
+  margin: -35vmax 0 0 -35vmax;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(255 226 180 / 0.2), rgb(255 200 150 / 0.08) 45%, transparent 75%);
+  opacity: 0;
+  transform: translate3d(var(--sx, 50vw), var(--sy, 40vh), 0);
+  transition: opacity 0.9s ease;
+}
+.night-field .spot { opacity: 1; }
+
 /* Off the clock: the field leans toward the strand being read. */
-:root[data-lean] .blob { --o: 0.4; }
+:root[data-lean] .blob { --o: 0.35; }
 :root[data-lean='coral'] .blob--coral,
 :root[data-lean='amber'] .blob--amber,
 :root[data-lean='mauve'] .blob--mauve,
 :root[data-lean='periwinkle'] .blob--periwinkle { --o: 1; }
-:root[data-lean='ink'] .blob { --o: 0.7; }
+:root[data-lean='ink'] .blob { --o: 0.6; }
 
 @media (prefers-reduced-motion: no-preference) {
   .blob { animation: drift var(--d) ease-in-out infinite alternate; }
@@ -90,13 +107,13 @@
     100% { transform: translate3d(3vmax, -4vmax, 0) scale(0.97); }
   }
 
-  /* The light is strongest at the top and settles as you read. */
-  @supports (animation-timeline: scroll()) {
-    .bg__field {
-      animation: settle linear both;
-      animation-timeline: scroll(root);
-      animation-range: 0 100vh;
+  /* on touch screens the spotlight wanders by itself */
+  @media (hover: none) {
+    .night-field .spot { animation: wander 18s ease-in-out infinite alternate; }
+    @keyframes wander {
+      0%   { transform: translate3d(20vw, 25vh, 0); }
+      50%  { transform: translate3d(75vw, 45vh, 0); }
+      100% { transform: translate3d(35vw, 70vh, 0); }
     }
-    @keyframes settle { to { opacity: 0.72; } }
   }
 }

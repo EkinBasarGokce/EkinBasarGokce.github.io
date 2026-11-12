@@ -6,15 +6,14 @@ order: 30
 kind: research
 hue: mauve
 ---
-My research is on generative drug design: using deep generative models to propose new molecules and to steer them toward the properties a drug needs.
+I work on generative drug design, where a model proposes new molecules rather than screening known ones.
 
-For my MSc thesis, *Generating Synergistic Drug Partners Using Chemical Language Models*, I fine-tuned chemical language models to generate drug partners that work well together.
+For my MSc thesis, *Generating Synergistic Drug Partners Using Chemical Language Models*, I fine-tuned chemical language models to suggest partner drugs that work well together.
 
-In my PhD I am taking this further, to conditional partner drug generation across cancer types: models that propose a partner for a drug, tailored to the cancer it is meant to treat.
+My PhD takes that further. The model gets the cancer type as a condition and proposes a partner drug tailored to it.
 
 - Generative drug design
 - Chemical language models
-- Drug combinations and synergy
-- Cancer-specific generation
+- Drug synergy
+- Conditional generation
 - Fine-tuning and PEFT
-- Agentic research workflows

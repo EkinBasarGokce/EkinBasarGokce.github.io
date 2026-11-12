@@ -6,14 +6,15 @@ import SectionHead from '../SectionHead.astro';
 interface Props {
   entry: CollectionEntry<'sections'>;
   navId: string;
+  index?: number;
 }
-const { entry, navId } = Astro.props;
+const { entry, navId, index } = Astro.props;
 const { Content } = await render(entry);
 ---
 
 <section id={entry.id} class="section section--prose" data-nav={navId} data-hue={entry.data.hue} aria-labelledby={`${entry.id}-title`}>
   <div class="wrap">
-    <SectionHead id={entry.id} title={entry.data.title} eyebrow={entry.data.eyebrow} exit={entry.data.exit} />
+    <SectionHead id={entry.id} title={entry.data.title} eyebrow={entry.data.eyebrow} index={index} exit={entry.data.exit} />
     <div class="prose reveal"><Content /></div>
   </div>
 </section>

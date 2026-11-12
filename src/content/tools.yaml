@@ -1,21 +1,13 @@
-# One group per entry. Lower order comes first.
-- id: llm
-  label: LLMs and agents
+# A short list on purpose: the tools that say what I actually do.
+- id: models
+  label: Models
   order: 10
-  items: [LLMs, RAG, MCP, Multi-agent orchestration, Vector databases, Claude Code, Copilot]
-- id: training
-  label: Training and fine-tuning
+  items: [PyTorch, Hugging Face, LoRA and PEFT, Chemical language models]
+- id: agents
+  label: Agents
   order: 20
-  items: [PyTorch, LoRA, PEFT, Hugging Face, TensorFlow, Keras, scikit-learn, Optuna]
-- id: science
-  label: Science and data
+  items: [LLMs and RAG, MCP, Multi-agent orchestration, Claude Code]
+- id: systems
+  label: Systems
   order: 30
-  items: [Chemical language models, Generative models, Bioinformatics, NumPy, Pandas, PySpark, Snakemake]
-- id: engineering
-  label: Engineering
-  order: 40
-  items: [Python, C++, R, Bash, SQL, JavaScript, React, FastAPI, Tauri, Docker, SageMaker, CI/CD, Git, G-code]
-- id: spoken
-  label: Languages
-  order: 50
-  items: [Turkish (native), English (advanced)]
+  items: [FastAPI, React, Tauri, Docker, PySpark]

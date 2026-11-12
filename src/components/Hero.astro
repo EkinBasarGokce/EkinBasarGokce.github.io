@@ -5,104 +5,130 @@ import { site, isTodo } from '../site';
 import { inline } from '../lib/format';
 
 const hasCv = fs.existsSync(path.join(process.cwd(), 'public', site.cv.replace(/^\//, '')));
+const [first, ...rest] = site.name.split(' ');
 ---
 
 <section id="top" class="hero" aria-label="Introduction">
   <div class="wrap grid">
     <div class="copy enter">
-      {site.hero.eyebrow && <p class="eyebrow" style="--i:0">{site.hero.eyebrow}</p>}
-      <h1 style="--i:1">{site.name}</h1>
+      <h1 style="--i:0"><span class="l1">{first} {rest.slice(0, -1).join(' ')}</span><span class="l2">{rest.at(-1)}</span></h1>
+      <p class="headline" style="--i:1" set:html={inline(site.hero.headline)} />
       <p class="lede" style="--i:2" set:html={inline(site.hero.lede)} />
       <ul class="links row" role="list" style="--i:3">
-        <li><a href="#contact">Email</a></li>
-        {hasCv && <li><a href={site.cv}>CV</a></li>}
-        {site.socials.map((s) => (
-          <li>
-            {isTodo(s.href) ? (
-              <span class="todo" title={s.href}>{s.label}</span>
-            ) : (
-              <a class="out" href={s.href} rel="me noopener" target="_blank">{s.label}</a>
-            )}
-          </li>
-        ))}
+        <li><a class="pen" href="#contact">Email</a></li>
+        {hasCv && <li><a class="pen" href={site.cv}>CV</a></li>}
+        {site.socials.map((s) =>
+          isTodo(s.href) ? null : (
+            <li><a class="pen out" href={s.href} rel="me noopener" target="_blank">{s.label}</a></li>
+          ),
+        )}
       </ul>
       <p class="bridge" style="--i:4" set:html={inline(site.hero.bridge)} />
     </div>
 
     <figure class="doodle">
       <button type="button" class="doodle-btn" data-doodle-trigger aria-label="Draw another face">
-        <canvas data-doodle="hero" width="300" height="340" role="img" aria-label="A hand-drawn doodle face, standing in for a portrait"></canvas>
+        <span class="lean" data-lean>
+          <canvas data-doodle="hero" width="420" height="420" role="img" aria-label="A hand-drawn doodle face, standing in for a portrait"></canvas>
+        </span>
       </button>
-      <figcaption class="small muted">
-        self-portrait, approximately
-        <span class="hint">tap to redraw</span>
+      <figcaption>
+        <span class="cap">self-portrait, approximately</span>
+        <span class="hint mono">tap to redraw</span>
       </figcaption>
     </figure>
   </div>
+
+  <p class="wrap cue mono" aria-hidden="true"><span class="cue-line"></span>{site.hero.cue}</p>
 </section>
 
 <style>
   .hero {
-    min-height: min(52rem, calc(100svh - var(--nav-h)));
+    min-height: calc(100svh - var(--nav-h));
     display: grid;
-    align-items: center;
+    grid-template-rows: 1fr auto;
     padding-block: var(--space-xl) var(--space-l);
   }
   .grid {
     display: grid;
-    grid-template-columns: minmax(0, 38rem) minmax(14rem, 1fr);
-    gap: var(--space-xl);
+    grid-template-columns: minmax(0, 1.25fr) minmax(16rem, 0.75fr);
+    gap: var(--space-l);
     align-items: center;
   }
-  .copy > * + * { margin-top: var(--space-s); }
-  .copy h1 { margin-top: var(--space-2xs); }
-  .lede {
+  h1 { display: grid; }
+  h1 .l2 { padding-left: 0.6em; font-style: italic; font-variation-settings: 'SOFT' 100, 'WONK' 1; }
+
+  .headline {
+    margin-top: var(--space-l);
     font-family: var(--font-display);
     font-variation-settings: 'SOFT' 100;
-    font-size: var(--step-1);
-    line-height: 1.42;
-    max-width: 34ch;
+    font-size: var(--step-3);
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    max-width: 18ch;
   }
-  .lede :global(a),
-  .bridge :global(a) { text-decoration-color: color-mix(in srgb, var(--coral) 55%, transparent); }
-  .row { margin-top: var(--space-m) !important; font-weight: 500; font-size: var(--step--1); }
-  .bridge { color: var(--muted); max-width: 44ch; padding-top: var(--space-s); border-top: 1px solid var(--rule); }
+  /* "on stage by night" is printed in negative: a preview of what is coming */
+  .headline :global(em) {
+    font-style: italic;
+    /* a true negative of whichever theme is on */
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0.02em 0.28em 0.08em;
+    border-radius: 0.2em;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    box-shadow: 0 0 0 1px rgb(255 255 255 / 0.04), 0 10px 30px -12px rgb(255 140 100 / 0.6);
+  }
+  .lede { margin-top: var(--space-m); max-width: 46ch; font-size: var(--step-0); color: var(--muted); line-height: 1.65; }
+  .lede :global(a) { color: var(--ink); }
+  .row {
+    margin-top: var(--space-m);
+    font-family: var(--font-mono);
+    font-size: var(--step--2);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .bridge { margin-top: var(--space-m); max-width: 46ch; padding-top: var(--space-s); border-top: 1px solid var(--rule); color: var(--muted); }
 
-  .doodle {
-    position: relative;
-    justify-self: center;
-    display: grid;
-    justify-items: center;
-    gap: var(--space-2xs);
-  }
-  /* a soft static halo of the field's warmest light behind the face */
+  .doodle { position: relative; justify-self: center; display: grid; justify-items: center; gap: var(--space-xs); }
   .doodle::before {
     content: '';
     position: absolute;
-    inset: -12% -18% 6%;
+    inset: -14% -20% 4%;
     z-index: -1;
     border-radius: 50%;
-    background: radial-gradient(closest-side, color-mix(in srgb, var(--amber) calc(var(--peak) * 0.8), transparent), color-mix(in srgb, var(--coral) calc(var(--peak) * 0.3), transparent) 55%, transparent);
+    background: radial-gradient(closest-side, color-mix(in srgb, var(--amber) calc(var(--peak) * 0.85), transparent), color-mix(in srgb, var(--coral) calc(var(--peak) * 0.35), transparent) 55%, transparent);
   }
   .doodle-btn { border-radius: 50%; cursor: pointer; touch-action: manipulation; }
-  .doodle canvas { width: 320px; height: 320px; }
-  @media (hover: hover) and (pointer: fine) {
-    .doodle-btn { transition: rotate 0.4s var(--ease-out); }
-    .doodle-btn:hover { rotate: -2deg; }
-  }
-  figcaption { text-align: center; font-style: italic; font-family: var(--font-display); }
-  .hint { display: block; font-style: normal; font-family: var(--font-body); opacity: 0.75; }
+  .lean { display: block; transition: transform 0.6s var(--ease-out); transform: rotate(var(--tilt, 0deg)) translate(var(--nx, 0px), var(--ny, 0px)); }
+  .doodle canvas { width: min(26rem, 34vw); height: min(26rem, 34vw); }
+  figcaption { display: grid; justify-items: center; gap: 0.2rem; }
+  .cap { font-family: var(--font-display); font-style: italic; color: var(--muted); }
+  .hint { font-size: var(--step--2); text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); opacity: 0.8; }
 
+  .cue {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    font-size: var(--step--2);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+  }
+  .cue-line { width: 3rem; height: 1px; background: currentColor; transform-origin: left; }
   @media (prefers-reduced-motion: no-preference) {
-    .doodle { animation: enter 0.9s var(--ease-out) 0.25s both; }
+    .doodle { animation: enter 1s var(--ease-out) 0.2s both; }
+    .cue-line { animation: cue 2.4s var(--ease-in-out) infinite; }
+    @keyframes cue { 0%, 100% { scale: 0.3 1; } 50% { scale: 1 1; } }
   }
 
-  @media (max-width: 52rem) {
-    .hero { min-height: auto; padding-top: var(--space-l); }
+  @media (max-width: 56rem) {
+    .hero { min-height: auto; }
     .grid { grid-template-columns: 1fr; gap: var(--space-m); }
     .doodle { order: -1; justify-self: start; grid-template-columns: auto 1fr; align-items: center; gap: var(--space-s); }
-    .doodle canvas { width: 150px; height: 150px; }
-    figcaption { text-align: left; }
+    .doodle canvas { width: 9.5rem; height: 9.5rem; }
+    figcaption { justify-items: start; }
+    .cue { margin-top: var(--space-l); }
   }
 </style>
 

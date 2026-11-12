@@ -1,77 +1,126 @@
 ---
 /**
- * The creative half: one section, a chip sub-nav, and one Strand per file in
- * src/content/strands/. Adding a strand = adding one .md file there.
+ * Off the clock is the night half of the page. It fades in from the cream
+ * above (the dusk), then keeps its own stage lights and a pointer spotlight
+ * pinned to the viewport while you read. One Strand per file in
+ * src/content/strands/; adding a strand = adding one .md file there.
  */
-import { getCollection, type CollectionEntry } from 'astro:content';
-import Section from '../Section.astro';
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import SectionHead from '../SectionHead.astro';
 import Strand from '../Strand.astro';
 import Lightbox from '../Lightbox.astro';
 
 interface Props {
   entry: CollectionEntry<'sections'>;
   navId: string;
+  index?: number;
 }
-const { entry, navId } = Astro.props;
+const { entry, navId, index } = Astro.props;
+const { Content } = await render(entry);
 const strands = (await getCollection('strands', (s) => !s.data.draft)).sort((a, b) => a.data.order - b.data.order);
+const stats = entry.data.stats;
 ---
 
-<Section entry={entry} navId={navId}>
-  <div class="otc" data-strands>
-    <nav class="strand-nav" aria-label="Off the clock">
-      <ul role="list">
-        {strands.map((s) => (
-          <li>
-            <a href={`#${s.id}`} data-chip={s.id} data-hue={s.data.hue} class="chip">{s.data.title}</a>
-          </li>
-        ))}
-      </ul>
-    </nav>
-    {strands.map((s) => <Strand strand={s} />)}
+<section
+  id={entry.id}
+  class="section otc night"
+  data-nav={navId}
+  data-hue={entry.data.hue}
+  data-night
+  aria-labelledby={`${entry.id}-title`}
+>
+  <div class="dusk" data-dusk aria-hidden="true"></div>
+  <div class="night-field" data-night-field aria-hidden="true">
+    <i class="blob blob--amber"></i>
+    <i class="blob blob--coral"></i>
+    <i class="blob blob--periwinkle"></i>
+    <i class="blob blob--mauve"></i>
+    <i class="spot"></i>
   </div>
+
+  {stats.length > 0 && (
+    <div class="wrap">
+      <dl class="stats" data-stagger>
+        {stats.map((s) => (
+          <div class="stat reveal">
+            <dt class="mono">{s.label}</dt>
+            <dd>{s.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  )}
+
+  <div class="wrap opening">
+    <SectionHead id={entry.id} title={entry.data.title} eyebrow={entry.data.eyebrow} index={index} />
+    <div class="intro reveal"><Content /></div>
+    <ul class="index" role="list">
+      {strands.map((s, i) => (
+        <li><a href={`#${s.id}`} data-hue={s.data.hue}><span class="mono">{String(i + 1).padStart(2, '0')}</span>{s.data.title}</a></li>
+      ))}
+    </ul>
+  </div>
+
+  {strands.map((s, i) => <Strand strand={s} n={i + 1} />)}
   <Lightbox />
-</Section>
+</section>
 
 <style>
-  /* a floating pill bar that sticks under the header */
-  .strand-nav {
+  .otc {
+    position: relative;
+    isolation: isolate;
+    padding-top: 0;
+    padding-bottom: var(--space-2xl);
+    color: var(--ink);
+    background: linear-gradient(to bottom, transparent 0, var(--night) 42vh);
+  }
+  /* the lights go down: a tall gradient from the cream page into the dark */
+  .dusk { height: 42vh; }
+  .night-field {
     position: sticky;
-    top: calc(var(--nav-h) + 0.5rem);
-    z-index: 5;
-    width: fit-content;
-    max-width: 100%;
-    margin-bottom: var(--space-s);
-    padding: 0.3rem;
-    border-radius: 999px;
-    background: var(--nav-bg);
-    border: 1px solid var(--rule);
-    box-shadow: 0 8px 24px rgb(60 40 80 / 0.08);
+    top: 0;
+    height: 100vh;
+    margin-bottom: -100vh;
+    z-index: -1;
+    overflow: hidden;
+    pointer-events: none;
   }
-  .strand-nav ul {
-    display: flex;
-    gap: 0.45rem;
-    overflow-x: auto;
-    scrollbar-width: none;
-    scroll-snap-type: x proximity;
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 9.5rem), 1fr));
+    gap: var(--space-l);
+    padding-block: var(--space-xl) var(--space-2xl);
   }
-  .strand-nav .chip { border-color: transparent; background: transparent; }
-  .strand-nav ul::-webkit-scrollbar { display: none; }
-  .strand-nav li { scroll-snap-align: center; flex: none; }
-  .chip {
+  .stat { display: flex; flex-direction: column-reverse; gap: var(--space-2xs); border-top: 1px solid var(--rule-strong); padding-top: var(--space-s); }
+  .stat dd {
+    font-family: var(--font-display);
+    font-variation-settings: 'SOFT' 100;
+    font-size: var(--step-6);
+    line-height: 0.85;
+    letter-spacing: -0.05em;
+    background: linear-gradient(180deg, #fff3e2 20%, var(--amber) 120%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+  .stat dt { font-size: var(--step--2); text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); max-width: 20ch; }
+
+  .opening { padding-bottom: var(--space-l); }
+  .opening :global(.head h2) { font-size: var(--step-5); }
+  .intro { font-size: var(--step-1); color: var(--muted); }
+  .index { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 0.5rem 1.6rem; }
+  .index a {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    font-family: var(--font-display);
+    font-variation-settings: 'SOFT' 100;
+    font-size: var(--step-2);
     text-decoration: none;
-    font-weight: 500;
-    padding: 0.45em 0.95em;
-    transition: background-color 0.3s ease, border-color 0.3s ease;
+    color: var(--ink);
+    transition: color 0.2s ease;
   }
-  .chip::before {
-    content: '';
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 50%;
-    background: var(--hue);
-  }
-  .strand-nav .chip[aria-current='true'] {
-    background: color-mix(in srgb, var(--hue) 34%, var(--paper));
-    border-color: color-mix(in srgb, var(--hue) 75%, transparent);
-  }
+  .index a .mono { font-size: var(--step--2); color: var(--hue); }
+  .index a:hover { color: var(--hue); }
 </style>
