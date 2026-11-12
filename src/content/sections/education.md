@@ -1,6 +1,6 @@
 ---
 title: Education
-eyebrow: 2016 to now
+eyebrow: Studies
 order: 40
 kind: education
 hue: periwinkle

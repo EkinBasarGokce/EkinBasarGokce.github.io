@@ -38,3 +38,25 @@
   order: 10
   file: old-analog.jpg
   alt: Analog photograph of three friends in a park under willow trees
+
+# Show posters (src/assets/photos/posters/), used on the Stage poster wall
+- id: poster-bahar
+  order: 10
+  file: posters/bahar-uyanisi.jpg
+  alt: "Poster for Bahar Uyanışı, the title in white brush letters over a red skirt in a summer field"
+- id: poster-charlie
+  order: 20
+  file: posters/charlie.jpg
+  alt: "Poster for Charlie'nin Çikolata Fabrikası, a gold title over purple swirls and flying sweets"
+- id: poster-gasteciler
+  order: 30
+  file: posters/gasteciler.jpg
+  alt: "Poster for Gasteciler, a newsboy leaping across a wall of newspaper pages"
+- id: poster-son-romanov
+  order: 40
+  file: posters/son-romanov.jpg
+  alt: "Poster for Son Romanov, a woman's silhouette in a shattered mirror with the Eiffel Tower behind"
+- id: poster-alice
+  order: 50
+  file: posters/alicein-kalbinden.jpg
+  alt: "Poster for Alice'in Kalbinden, yellow hand-drawn Wonderland figures on deep blue"

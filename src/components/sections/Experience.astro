@@ -7,26 +7,33 @@ import { span, when } from '../../lib/format';
 interface Props {
   entry: CollectionEntry<'sections'>;
   navId: string;
-  index?: number;
 }
-const { entry, navId, index } = Astro.props;
+const { entry, navId } = Astro.props;
 const items = (await getCollection('experience', (e) => !e.data.draft)).sort((a, b) => a.data.order - b.data.order);
 const rows = await Promise.all(items.map(async (e) => ({ e, Content: (await render(e)).Content })));
 ---
 
-<Section entry={entry} navId={navId} index={index}>
-  <ol class="ledger xp" role="list" data-stagger>
+<Section entry={entry} navId={navId}>
+  <ol class="ledger" role="list" data-stagger>
     {rows.map(({ e, Content }) => {
       const d = e.data;
       const newest = d.roles[0];
       const oldest = d.roles[d.roles.length - 1];
       const dates = span(oldest.start, newest.end ?? newest.start);
-      const path = [...d.roles].reverse().map((r) => r.title).join(', then ');
       return (
         <li class="reveal">
-          <p class="when">{oldest.start ? dates : newest.end ? when(newest.end) : ''}</p>
+          <p class="when">
+            {oldest.start ? (
+              dates
+            ) : (
+              <>
+                <span class="todo" title="Add start dates in the entry file">start</span>
+                {newest.end && ` – ${when(newest.end)}`}
+              </>
+            )}
+          </p>
           <div>
-            <h3>{newest.title} <span class="org">at {d.org}</span></h3>
+            <h3>{newest.title} <span class="org">· {d.org}</span></h3>
             {(d.unit || d.location) && (
               <p class="meta">
                 {d.unit && <Text value={d.unit} />}
@@ -34,7 +41,7 @@ const rows = await Promise.all(items.map(async (e) => ({ e, Content: (await rend
                 {d.location}
               </p>
             )}
-            {d.roles.length > 1 && <p class="path mono">{path}</p>}
+            {d.roles.length > 1 && <p class="path">{[...d.roles].reverse().map((r) => r.title).join(', then ')}</p>}
             <div class="body"><Content /></div>
             {d.tags.length > 0 && (
               <ul class="chips" role="list">
@@ -49,16 +56,6 @@ const rows = await Promise.all(items.map(async (e) => ({ e, Content: (await rend
 </Section>
 
 <style>
-  .org { color: var(--muted); font-style: italic; font-variation-settings: 'SOFT' 100; }
-  .path {
-    margin-top: var(--space-2xs);
-    font-size: var(--step--2);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--accent);
-  }
-  .xp > li { transition: background-color 0.3s ease; }
-  @media (hover: hover) and (pointer: fine) {
-    .xp > li:hover { background: linear-gradient(90deg, color-mix(in srgb, var(--coral) 10%, transparent), transparent 70%); }
-  }
+  .org { color: var(--muted); }
+  .path { margin-top: var(--space-2xs); font-size: var(--step--1); color: var(--coral-ink); }
 </style>

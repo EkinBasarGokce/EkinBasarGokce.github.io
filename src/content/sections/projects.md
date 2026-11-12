@@ -1,6 +1,6 @@
 ---
 title: Projects
-eyebrow: 2024 to now
+eyebrow: Things I built
 nav: Projects
 order: 20
 kind: projects

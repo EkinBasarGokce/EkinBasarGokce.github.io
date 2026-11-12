@@ -7,7 +7,8 @@ roles:
   - title: Undergraduate Researcher
     start: "2022"
     end: "2022"
-tags: [Cancer biology, Machine learning]
+tags: [Cancer biology, Drug resistance, Machine learning]
 order: 50
 ---
-- Studied drug resistance in cancer, and built machine learning models that predict which drugs bind which targets.
+- Researched drug resistance in cancer: why a treatment that once worked stops working.
+- Built machine learning models that predict drug–target interactions, as a drug prediction method for the lab.

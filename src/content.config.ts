@@ -115,6 +115,8 @@ const strands = defineCollection({
           href: z.string().optional(),
           /** stage posters: a photos.yaml id to print on the poster, or a colour scheme */
           photo: z.string().optional(),
+          /** a real show poster (photos.yaml id), shown as artwork without text over it */
+          poster: z.string().optional(),
           tone: z.enum(['spring', 'chocolate', 'royal', 'news', 'knight']).optional(),
         }),
       )

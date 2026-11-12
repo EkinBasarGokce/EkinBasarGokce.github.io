@@ -4,23 +4,22 @@ kicker: Musical theatre with The Company Musicals, METU.
 hue: coral
 order: 20
 layout: posters
-cover: gasteciler-1
+media: [photos]
 entries:
   - title: Bahar Uyanışı
     role: Director
     when: "2018"
     detail: Turkish adaptation of Spring Awakening.
-    tone: spring
+    poster: poster-bahar
   - title: Charlie'nin Çikolata Fabrikası
     role: Director
     when: "2019"
     detail: Turkish adaptation of Charlie and the Chocolate Factory.
-    tone: chocolate
+    poster: poster-charlie
   - title: Gasteciler
     role: Assistant director
     detail: Turkish adaptation of Newsies.
-    photo: gasteciler-2
-    tone: news
+    poster: poster-gasteciler
   - title: Spamalot
     role: Actor
     detail: Monty Python's Spamalot.
@@ -29,6 +28,10 @@ entries:
   - title: Son Romanov
     role: Actor
     detail: Turkish adaptation of Anastasia.
-    tone: royal
+    poster: poster-son-romanov
+  - title: Alice'in Kalbinden
+    role: Actor
+    detail: Turkish adaptation of Alice By Heart.
+    poster: poster-alice
 ---
-I spent four years with The Company Musicals at METU and ended up directing two full musicals, in 2018 and 2019, with more than 80 people on the team.
+With The Company Musicals, METU's musical theatre community, I have worked on every side of a show: on stage as an actor, beside the director as assistant director, and in the director's chair. I directed two musicals, in 2018 and 2019, planning a full one-year season and leading a team of more than 80 people.

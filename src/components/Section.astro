@@ -7,31 +7,23 @@ interface Props {
   entry: CollectionEntry<'sections'>;
   /** which nav item lights up while this section is on screen */
   navId: string;
-  /** position on the page, printed in the head */
-  index?: number;
-  /** night sections switch the page into the dark stage look */
-  night?: boolean;
   class?: string;
 }
-const { entry, navId, index, night = false, class: cls } = Astro.props;
+const { entry, navId, class: cls } = Astro.props;
 const { Content } = await render(entry);
 const hasIntro = Boolean(entry.body?.trim());
 ---
 
 <section
   id={entry.id}
-  class:list={['section', `section--${entry.data.kind}`, { night }, cls]}
+  class:list={['section', `section--${entry.data.kind}`, cls]}
   data-nav={navId}
   data-hue={entry.data.hue}
-  data-night={night ? '' : undefined}
   aria-labelledby={`${entry.id}-title`}
 >
   <div class="wrap">
-    <SectionHead id={entry.id} title={entry.data.title} eyebrow={entry.data.eyebrow} index={index} exit={entry.data.exit} />
+    <SectionHead id={entry.id} title={entry.data.title} eyebrow={entry.data.eyebrow} exit={entry.data.exit} />
     {hasIntro && <div class="intro reveal"><Content /></div>}
-  </div>
-  <slot name="wide" />
-  <div class="wrap">
     <slot />
   </div>
 </section>

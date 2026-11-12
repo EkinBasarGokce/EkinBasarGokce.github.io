@@ -1,0 +1,85 @@
+---
+/**
+ * A skeletal formula of a 4-anilinoquinazoline: the fused-ring scaffold of
+ * several targeted cancer drugs, with two methoxy groups and a
+ * 3-chloro-4-fluoro aniline. Coordinates are computed from regular hexagons.
+ */
+type P = [number, number];
+const s = 28; // bond length
+const h = (cx: number, cy: number): P[] =>
+  [-90, -30, 30, 90, 150, 210].map((a) => [cx + s * Math.cos((a * Math.PI) / 180), cy + s * Math.sin((a * Math.PI) / 180)]);
+
+const A = [80, 140] as P; // benzo ring
+const B = [80 + s * Math.sqrt(3), 140] as P; // pyrimidine ring (fused)
+const a = h(...A);
+const b = h(...B);
+const nh: P = [b[0][0], b[0][1] - s]; // NH on C4
+const C = [nh[0] + s * Math.cos(-Math.PI / 6) + s * Math.cos(-Math.PI / 6), nh[1] - s * 0.5 - s * 0.5] as P;
+const c = h(...C);
+const o1: P = [a[4][0] - s * Math.cos(Math.PI / 6), a[4][1] + s / 2];
+const o2: P = [a[5][0] - s * Math.cos(Math.PI / 6), a[5][1] - s / 2];
+const me1: P = [o1[0] - s * Math.cos(Math.PI / 6), o1[1] - s / 2];
+const me2: P = [o2[0] - s * Math.cos(Math.PI / 6), o2[1] + s / 2];
+const f: P = [c[1][0] + s * Math.cos(Math.PI / 6), c[1][1] - s / 2];
+const cl: P = [c[2][0] + s * Math.cos(Math.PI / 6), c[2][1] + s / 2];
+
+const ring = (v: P[]) => v.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ') + ' Z';
+const line = (p: P, q: P) => `M${p[0].toFixed(1)} ${p[1].toFixed(1)} L${q[0].toFixed(1)} ${q[1].toFixed(1)}`;
+
+const bonds = [
+  ring(a), ring(b), ring(c),
+  line(b[0], nh), line(nh, c[4]),
+  line(a[4], o1), line(o1, me1), line(a[5], o2), line(o2, me2),
+  line(c[1], f), line(c[2], cl),
+];
+// aromatic rings drawn with an inner circle
+const aromatic = [A, B, C];
+const atoms: { p: P; t: string; kind: 'n' | 'o' | 'x' }[] = [
+  { p: b[1], t: 'N', kind: 'n' },
+  { p: b[3], t: 'N', kind: 'n' },
+  { p: nh, t: 'NH', kind: 'n' },
+  { p: o1, t: 'O', kind: 'o' },
+  { p: o2, t: 'O', kind: 'o' },
+  { p: f, t: 'F', kind: 'x' },
+  { p: cl, t: 'Cl', kind: 'x' },
+];
+---
+
+<figure class="molecule" aria-label="A drawing of a drug-like molecule: a quinazoline core with an aniline ring">
+  <svg viewBox="-12 -8 262 198">
+    <g class="bonds">
+      {bonds.map((d) => <path d={d} />)}
+      {aromatic.map(([x, y]) => <circle cx={x} cy={y} r={s * 0.56} />)}
+    </g>
+    <g class="atoms">
+      {atoms.map((at) => (
+        <g class={`atom ${at.kind}`}>
+          <circle cx={at.p[0]} cy={at.p[1]} r={at.t.length > 1 ? 11 : 9} />
+          <text x={at.p[0]} y={at.p[1] + 3.6} text-anchor="middle">{at.t}</text>
+        </g>
+      ))}
+    </g>
+  </svg>
+</figure>
+
+<style>
+  .molecule { margin: 0; color: var(--ink); }
+  .molecule svg { width: 100%; height: auto; overflow: visible; }
+  .bonds path, .bonds circle { fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; opacity: 0.85; }
+  .bonds circle { stroke-width: 1.4; opacity: 0.5; }
+  .atom circle { fill: var(--paper); stroke-width: 1.6; }
+  .atom text { font-family: var(--font-body); font-size: 10px; font-weight: 700; }
+  .n circle { stroke: var(--periwinkle-ink); fill: color-mix(in srgb, var(--periwinkle) 40%, var(--paper)); }
+  .n text { fill: var(--periwinkle-ink); }
+  .o circle { stroke: var(--coral-ink); fill: color-mix(in srgb, var(--coral) 35%, var(--paper)); }
+  .o text { fill: var(--coral-ink); }
+  .x circle { stroke: var(--amber-ink); fill: color-mix(in srgb, var(--amber) 35%, var(--paper)); }
+  .x text { fill: var(--amber-ink); }
+  @media (prefers-reduced-motion: no-preference) {
+    .molecule svg { animation: float 9s ease-in-out infinite alternate; transform-origin: center; }
+    @keyframes float {
+      from { transform: translateY(-5px) rotate(-2deg); }
+      to { transform: translateY(5px) rotate(2deg); }
+    }
+  }
+</style>

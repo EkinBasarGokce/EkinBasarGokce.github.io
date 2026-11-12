@@ -7,7 +7,7 @@ roles:
   - title: Undergraduate Researcher
     start: "2020"
     end: "2020"
-tags: [Cancer genomics]
+tags: [Cancer genomics, Mutational signatures]
 order: 70
 ---
-- Analysed mutational signatures across the human cancer genome.
+- Analysed mutational signatures across the human cancer genome, looking for the characteristic mutation patterns that set different genomic regions apart.

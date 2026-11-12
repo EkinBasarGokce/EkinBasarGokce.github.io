@@ -1,8 +1,10 @@
 ---
 /**
- * Stage as a wall of posters, one per production. A poster prints the
- * production's photo when it has one (entries[].photo), otherwise it is set
- * in type in a colour scheme that fits the show (entries[].tone).
+ * Stage as a wall of posters, one per production, with the role and year
+ * underneath. An entry can carry:
+ *   poster -> the real show poster (photos.yaml id), shown as artwork
+ *   photo  -> a stage photo, with the title printed over it
+ *   tone   -> no image: a poster set in type, in a colour scheme for the show
  */
 import { Picture } from 'astro:assets';
 import type { GetImageResult } from 'astro';
@@ -14,6 +16,7 @@ interface Entry {
   when?: string;
   detail?: string;
   photo?: string;
+  poster?: string;
   tone?: string;
 }
 interface Props {
@@ -25,26 +28,33 @@ const { entries, photos } = Astro.props;
 
 <ul class="wall" role="list" data-stagger>
   {entries.map((e) => {
-    const ph = e.photo ? photos.get(e.photo) : undefined;
+    const real = e.poster ? photos.get(e.poster) : undefined;
+    const ph = !real && e.photo ? photos.get(e.photo) : undefined;
+    const img = real ?? ph;
     const credit = ph ? photoLine(ph.p) : '';
+    const caption = [e.title, e.role, e.when].filter(Boolean).join(' · ');
     return (
-      <li class:list={['poster', 'reveal', { photo: !!ph }]} data-tone={e.tone ?? 'royal'}>
-        {ph ? (
-          <a class="art" href={ph.full.src} data-lightbox data-alt={ph.p.alt} data-caption={credit || e.title}>
-            <Picture src={ph.p.src} alt={ph.p.alt} formats={['avif', 'webp']} widths={[360, 720]} sizes="(min-width: 72rem) 15rem, 60vw" />
-          </a>
-        ) : (
-          <span class="art pattern" aria-hidden="true"></span>
-        )}
-        <div class="type">
-          <p class="top mono">
-            <span>{e.role}</span>
-            {e.when && <span>{e.when}</span>}
-          </p>
-          <p class="title">{e.title}</p>
-          {e.detail && <p class="detail">{e.detail}</p>}
-          {credit && credit !== e.title && <p class="credit mono">{credit}</p>}
+      <li class="poster reveal">
+        <div class:list={['card', { photo: !!ph, real: !!real }]} data-tone={e.tone ?? 'royal'}>
+          {img ? (
+            <a class="art" href={img.full.src} data-lightbox data-alt={img.p.alt} data-caption={credit ? `${caption} · ${credit}` : caption}>
+              <Picture src={img.p.src} alt={img.p.alt} formats={['avif', 'webp']} widths={[360, 720]} sizes="(min-width: 80rem) 17rem, 60vw" />
+            </a>
+          ) : (
+            <span class="art pattern" aria-hidden="true"></span>
+          )}
+          {!real && (
+            <div class="type">
+              <p class="title">{e.title}</p>
+              {e.detail && <p class="detail">{e.detail}</p>}
+              {credit && <p class="credit">{credit}</p>}
+            </div>
+          )}
         </div>
+        <p class="cap">
+          {real && <span class="name">{e.title}</span>}
+          <span class="role">{[e.role, e.when].filter(Boolean).join(' · ')}</span>
+        </p>
       </li>
     );
   })}
@@ -55,76 +65,49 @@ const { entries, photos } = Astro.props;
     list-style: none;
     padding: 0;
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: var(--space-s);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-l) var(--space-m);
   }
-  .poster {
+  .poster { display: grid; gap: 0.6rem; align-content: start; }
+  .card {
     position: relative;
     container-type: inline-size;
-    aspect-ratio: 2 / 3;
-    border-radius: 0.35rem;
+    aspect-ratio: 1 / 1.414; /* A-series poster */
+    border-radius: 0.3rem;
     overflow: hidden;
     color: var(--fg);
     background: var(--bg);
-    box-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.9), inset 0 0 0 1px rgb(255 255 255 / 0.06);
-    transition: translate 0.4s var(--ease-out), rotate 0.4s var(--ease-out);
+    box-shadow: 0 24px 60px -24px rgb(0 0 0 / 0.75), inset 0 0 0 1px rgb(255 255 255 / 0.06);
+    transition: translate 0.4s var(--ease-out), rotate 0.4s var(--ease-out), box-shadow 0.4s ease;
   }
-  .poster:nth-child(odd) { rotate: -0.6deg; }
-  .poster:nth-child(even) { rotate: 0.8deg; }
+  .poster:nth-child(odd) .card { rotate: -0.6deg; }
+  .poster:nth-child(even) .card { rotate: 0.7deg; }
   @media (hover: hover) and (pointer: fine) {
-    .poster:hover { translate: 0 -8px; rotate: 0deg; z-index: 1; }
+    .poster:hover .card { translate: 0 -8px; rotate: 0deg; box-shadow: 0 34px 70px -24px rgb(0 0 0 / 0.85); }
   }
 
   .art { position: absolute; inset: 0; display: block; }
   .art :global(picture), .art :global(img) { display: block; width: 100%; height: 100%; object-fit: cover; }
-  .photo .art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgb(0 0 0 / 0.55), transparent 35%, transparent 45%, rgb(0 0 0 / 0.85)); pointer-events: none; }
+  .photo .art::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgb(0 0 0 / 0.35), transparent 30%, transparent 45%, rgb(0 0 0 / 0.88)); pointer-events: none; }
 
-  .type { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 0.9rem; pointer-events: none; }
-  .top { display: flex; justify-content: space-between; gap: 0.5rem; font-size: 0.62rem; letter-spacing: 0.14em; text-transform: uppercase; }
+  .type { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-end; padding: 0.9rem; pointer-events: none; }
   .title {
-    margin-top: auto;
     font-family: var(--font-display);
     font-variation-settings: 'SOFT' 100;
-    /* sized by the poster's own width, so long titles wrap at spaces only */
-    font-size: 15cqi;
+    font-size: 15cqi; /* sized by the poster's own width */
     line-height: 0.95;
     letter-spacing: -0.03em;
     overflow-wrap: normal;
   }
-  .detail { margin-top: 0.45rem; font-size: 0.72rem; line-height: 1.35; opacity: 0.85; }
-  .credit { margin-top: 0.4rem; font-size: 0.56rem; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.7; }
+  .detail { margin-top: 0.45rem; font-size: 0.75rem; line-height: 1.35; opacity: 0.85; }
+  .credit { margin-top: 0.4rem; font-size: 0.6rem; letter-spacing: 0.08em; text-transform: uppercase; opacity: 0.7; }
 
-  /* typographic posters, one scheme per show */
-  [data-tone='spring'] { --bg: #f5d0dc; --fg: #2b1530; }
-  [data-tone='spring'] .pattern {
-    background:
-      radial-gradient(circle at 78% 22%, #ffffff 0 9%, transparent 9.5%),
-      radial-gradient(circle at 20% 60%, #9fd3a9 0 26%, transparent 26.5%),
-      radial-gradient(circle at 70% 70%, #f39bb4 0 22%, transparent 22.5%),
-      linear-gradient(160deg, #f9dfe7, #cfe9d4);
-  }
-  [data-tone='spring'] .title { font-style: italic; font-size: 17cqi; }
+  .cap { display: grid; gap: 0.1rem; font-size: var(--step--1); line-height: 1.3; }
+  .cap .name { font-weight: 600; }
+  .cap .role { color: var(--hue-ink, var(--muted)); font-size: 0.8rem; letter-spacing: 0.04em; }
 
-  [data-tone='chocolate'] { --bg: #3a1d12; --fg: #f6d58a; }
-  [data-tone='chocolate'] .title { font-size: 12.5cqi; }
-  [data-tone='chocolate'] .pattern {
-    background:
-      repeating-linear-gradient(90deg, #4b2617 0 18px, #3a1d12 18px 36px),
-      #3a1d12;
-  }
-  [data-tone='chocolate'] .pattern::after {
-    content: '';
-    position: absolute;
-    left: 12%;
-    right: 12%;
-    top: 16%;
-    height: 34%;
-    border-radius: 0.3rem;
-    background: linear-gradient(135deg, #f6d58a, #c79a3a);
-    box-shadow: 0 0 40px rgb(246 213 138 / 0.4);
-    rotate: -6deg;
-  }
-
+  /* typographic posters, for shows without an image */
+  [data-tone='knight'] { --bg: #0d1a3a; --fg: #fff; }
   [data-tone='royal'] { --bg: #16213f; --fg: #e9cf8f; }
   [data-tone='royal'] .pattern {
     background:
@@ -132,15 +115,13 @@ const { entries, photos } = Astro.props;
       repeating-radial-gradient(circle at 50% 30%, transparent 0 14px, rgb(233 207 143 / 0.08) 14px 15px),
       #16213f;
   }
-  [data-tone='royal'] .type { inset: 0.5rem; border: 1px solid rgb(233 207 143 / 0.5); border-radius: 0.2rem; }
-
+  [data-tone='spring'] { --bg: #f5d0dc; --fg: #2b1530; }
+  [data-tone='spring'] .pattern { background: radial-gradient(circle at 20% 60%, #9fd3a9 0 26%, transparent 26.5%), radial-gradient(circle at 70% 70%, #f39bb4 0 22%, transparent 22.5%), linear-gradient(160deg, #f9dfe7, #cfe9d4); }
+  [data-tone='chocolate'] { --bg: #3a1d12; --fg: #f6d58a; }
+  [data-tone='chocolate'] .pattern { background: repeating-linear-gradient(90deg, #4b2617 0 18px, #3a1d12 18px 36px); }
   [data-tone='news'] { --bg: #111; --fg: #fff; }
-  [data-tone='news'] .art :global(img) { filter: grayscale(1) contrast(1.15); }
-  [data-tone='news'] .title { text-transform: uppercase; font-family: var(--font-body); font-weight: 800; letter-spacing: 0.01em; font-size: 12cqi; }
 
-  [data-tone='knight'] { --bg: #0d1a3a; --fg: #fff; }
-
-  @media (max-width: 64rem) {
+  @media (max-width: 80rem) {
     .wall {
       grid-template-columns: none;
       grid-auto-flow: column;
@@ -148,8 +129,6 @@ const { entries, photos } = Astro.props;
       overflow-x: auto;
       scroll-snap-type: x mandatory;
       padding-bottom: var(--space-s);
-      margin-inline: calc(-1 * var(--gutter));
-      padding-inline: var(--gutter);
     }
     .poster { scroll-snap-align: start; }
   }

@@ -1,74 +1,73 @@
 ---
-/**
- * One creative practice inside Off the clock. Everything comes from its .md
- * file; `layout` picks how its media is shown:
- *   film    -> a film strip of the strand's photos (Photography)
- *   posters -> a poster wall built from `entries` (Stage)
- *   band    -> a panel in the band's colours (Music)
- *   cinema  -> large video players (Video)
- *   default -> a dated list, plus any photos, videos and cards
- */
+import type { ImageMetadata } from 'astro';
+/** One creative practice inside Off the clock. Everything comes from its .md file. */
 import { getCollection, render, type CollectionEntry } from 'astro:content';
 import { Picture, getImage } from 'astro:assets';
 import Text from './Text.astro';
 import Video from './Video.astro';
 import LinkCard from './LinkCard.astro';
-import FilmStrip from './strands/FilmStrip.astro';
+import InstagramBadge from './InstagramBadge.astro';
 import PosterWall from './strands/PosterWall.astro';
-import BandPanel from './strands/BandPanel.astro';
-import { getPhotos, getStrandPhotos, photoLine, type Photo } from '../lib/photos';
+import { getPhotos, getStrandPhotos, photoLine } from '../lib/photos';
 
 interface Props {
   strand: CollectionEntry<'strands'>;
-  n: number;
 }
-const { strand, n } = Astro.props;
+const { strand } = Astro.props;
 const d = strand.data;
 const { Content } = await render(strand);
 
-const withFull = async (p: Photo) => ({ p, full: await getImage({ src: p.src, width: Math.min(2000, p.src.width), format: 'webp' }) });
-const allPhotos = await getPhotos();
-const byId = new Map(allPhotos.map((p) => [p.id, p]));
-
 const wants = (m: 'photos' | 'videos' | 'cards') => d.media.includes(m);
-const photos = wants('photos') ? await Promise.all((await getStrandPhotos(strand.id)).map(withFull)) : [];
-const videos = wants('videos') ? await getCollection('videos', (v) => v.data.strand === strand.id) : [];
-const cards = wants('cards') ? await getCollection('cards', (c) => c.data.strand === strand.id) : [];
-const cover = d.cover && byId.get(d.cover) ? await withFull(byId.get(d.cover)!) : null;
+const full = (src: ImageMetadata) => getImage({ src, width: Math.min(2000, src.width), format: 'webp' });
+
+// layout: posters turns the entries into a poster wall; a poster can print a photo
+const posters = d.layout === 'posters';
+const byId = new Map((await getPhotos()).map((p) => [p.id, p]));
 const posterPhotos = new Map(
   await Promise.all(
-    d.entries.filter((e) => e.photo && byId.has(e.photo)).map(async (e) => [e.photo!, await withFull(byId.get(e.photo!)!)] as const),
+    d.entries
+      .flatMap((e) => (posters ? [e.photo, e.poster] : []))
+      .filter((id): id is string => !!id && byId.has(id))
+      .map(async (id) => [id, { p: byId.get(id)!, full: await full(byId.get(id)!.src) }] as const),
   ),
 );
+
+const photos = wants('photos')
+  ? await Promise.all(
+      (await getStrandPhotos(strand.id)).filter((p) => !posterPhotos.has(p.id)).map(async (p) => ({
+        p,
+        full: await getImage({ src: p.src, width: Math.min(2000, p.src.width), format: 'webp' }),
+      })),
+    )
+  : [];
+const videos = wants('videos') ? await getCollection('videos', (v) => v.data.strand === strand.id) : [];
+const cards = wants('cards') ? await getCollection('cards', (c) => c.data.strand === strand.id) : [];
+// "All photographs" only makes sense once there are photographs
 const showMore = d.more && !(wants('photos') && photos.length === 0);
 const external = (href: string) => /^https?:\/\//.test(href);
 ---
 
-<article id={strand.id} class:list={['strand', `strand--${d.layout}`]} data-strand={strand.id} data-hue={d.hue} aria-labelledby={`${strand.id}-title`}>
-  <header class="wrap head-row">
-    <p class="num mono">{String(n).padStart(2, '0')}</p>
-    <h3 class="title reveal" id={`${strand.id}-title`}>{d.title}</h3>
-    <p class="kicker reveal">{d.kicker}</p>
-    <div class="prose reveal"><Content /></div>
+<article id={strand.id} class="strand" data-strand={strand.id} data-hue={d.hue} aria-labelledby={`${strand.id}-title`}>
+  <header class="side reveal">
+    <h3 id={`${strand.id}-title`}>{d.title}</h3>
+    <span class="bar" aria-hidden="true"></span>
+    <p class="kicker">{d.kicker}</p>
   </header>
 
-  {cover && (
-    <figure class="cover reveal">
-      <a href={cover.full.src} data-lightbox data-alt={cover.p.alt} data-caption={photoLine(cover.p)}>
-        <Picture src={cover.p.src} alt={cover.p.alt} formats={['avif', 'webp']} widths={[800, 1400, 2000]} sizes="100vw" />
-      </a>
-      {photoLine(cover.p) && <figcaption class="mono">{photoLine(cover.p)}</figcaption>}
-    </figure>
-  )}
+  <div class="main">
+    <div class="prose reveal"><Content /></div>
 
-  <div class="wrap body">
-    {d.layout === 'film' && d.entries.length > 0 && (
-      <ul class="ledger entries film-entries" role="list">
+    {posters && <PosterWall entries={d.entries} photos={posterPhotos} />}
+
+    {!posters && d.entries.length > 0 && (
+      <ul class="ledger entries" role="list" data-stagger>
         {d.entries.map((e) => (
           <li class="reveal">
             <p class="when">{e.when && <Text value={e.when} />}</p>
             <div>
-              <p class="entry-title">{e.title}</p>
+              <p class="entry-title">
+                {e.href ? <a href={e.href}><Text value={e.title} /></a> : <Text value={e.title} />}
+              </p>
               {e.role && <p class="entry-role">{e.role}</p>}
               {e.detail && <p class="small muted"><Text value={e.detail} /></p>}
             </div>
@@ -76,55 +75,65 @@ const external = (href: string) => /^https?:\/\//.test(href);
         ))}
       </ul>
     )}
-    {d.layout === 'film' && <FilmStrip photos={photos} placeholder={d.placeholder} />}
 
-    {d.layout === 'posters' && <PosterWall entries={d.entries} photos={posterPhotos} />}
+    {wants('photos') && photos.length === 0 && d.placeholder && <p class="soon">{d.placeholder}</p>}
 
-    {d.layout === 'band' && (
-      <BandPanel
-        name={cards[0]?.data.label ?? d.title}
-        logo={d.logo}
-        logoAlt={d.logoAlt}
-        card={cards[0]?.data}
-        photo={photos[0]}
-        links={d.links}
-      />
-    )}
-
-    {d.layout === 'cinema' && videos.length > 0 && (
-      <div class="cinema">
-        {videos.map((v) => <Video id={v.id} title={v.data.title} role={v.data.role} year={v.data.year} start={v.data.start} />)}
-      </div>
-    )}
-
-    {d.layout === 'default' && (
-      <>
-        {d.entries.length > 0 && (
-          <ul class="ledger entries" role="list" data-stagger>
-            {d.entries.map((e) => (
-              <li class="reveal">
-                <p class="when">{e.when && <Text value={e.when} />}</p>
-                <div>
-                  <p class="entry-title">{e.href ? <a class="pen" href={e.href}><Text value={e.title} /></a> : <Text value={e.title} />}</p>
-                  {e.role && <p class="entry-role">{e.role}</p>}
-                  {e.detail && <p class="small muted"><Text value={e.detail} /></p>}
-                </div>
+    {(photos.length > 0 || cards.length > 0) && (
+      <div class="media-row">
+        {photos.length > 0 && (
+          <ul
+            class:list={['photos', 'reveal', { single: photos.length === 1 }]}
+            data-orient={photos.length === 1 ? (photos[0].p.src.width >= photos[0].p.src.height ? 'landscape' : 'portrait') : undefined}
+            role="list"
+          >
+            {photos.map(({ p, full }) => (
+              <li>
+                <a href={full.src} data-lightbox data-alt={p.alt} data-caption={photoLine(p)}>
+                  <Picture
+                    src={p.src}
+                    alt={p.alt}
+                    formats={['avif', 'webp']}
+                    widths={[320, 640, 960]}
+                    sizes={photos.length === 1 ? '(min-width: 40rem) 30rem, 100vw' : '(min-width: 64rem) 16rem, (min-width: 40rem) 30vw, 46vw'}
+                  />
+                </a>
+                {photoLine(p) && <p class="cap small muted">{photoLine(p)}</p>}
               </li>
             ))}
           </ul>
         )}
-        {videos.length > 0 && <div class="cinema">{videos.map((v) => <Video id={v.id} title={v.data.title} role={v.data.role} year={v.data.year} start={v.data.start} />)}</div>}
-        {cards.length > 0 && <div class="cards">{cards.map((c) => <LinkCard label={c.data.label} sub={c.data.sub} href={c.data.href} platform={c.data.platform} />)}</div>}
-      </>
+
+        {cards.length > 0 && (
+          <div class="cards">
+            {cards.map((c) =>
+              c.data.style === 'badge' && c.data.platform === 'instagram' ? (
+                <InstagramBadge name={c.data.label} handle={c.data.sub ?? ''} href={c.data.href} avatar={d.logo} avatarAlt={d.logoAlt} tiles={c.data.tiles} />
+              ) : (
+                <LinkCard label={c.data.label} sub={c.data.sub} href={c.data.href} platform={c.data.platform} />
+              ),
+            )}
+          </div>
+        )}
+      </div>
     )}
 
-    {d.layout !== 'band' && (d.links.length > 0 || showMore) && (
+    {videos.length > 0 && (
+      <div class="videos">
+        {videos.map((v) => <Video id={v.id} title={v.data.title} role={v.data.role} year={v.data.year} start={v.data.start} />)}
+      </div>
+    )}
+
+    {(d.links.length > 0 || showMore) && (
       <div class="out-row">
         {showMore && d.more && <a class="btn" href={d.more.href}>{d.more.label} →</a>}
         {d.links.length > 0 && (
           <ul class="links small" role="list">
             {d.links.map((l) =>
-              external(l.href) ? <li><a class="pen out" href={l.href} target="_blank" rel="noopener">{l.label}</a></li> : <li><a class="pen" href={l.href}>{l.label}</a></li>,
+              external(l.href) ? (
+                <li><a class="out" href={l.href} target="_blank" rel="noopener">{l.label}</a></li>
+              ) : (
+                <li><a href={l.href}>{l.label}</a></li>
+              ),
             )}
           </ul>
         )}
@@ -134,41 +143,64 @@ const external = (href: string) => /^https?:\/\//.test(href);
 </article>
 
 <style>
-  .strand { padding-top: var(--space-2xl); scroll-margin-top: calc(var(--nav-h) + 1rem); }
-  /* the title gets a full-width row so big words never break */
-  .head-row {
+  .strand {
     display: grid;
-    grid-template-columns: minmax(12rem, 22rem) minmax(0, 1fr);
-    grid-template-areas: 'num num' 'title title' 'kicker prose';
-    gap: 0 var(--space-xl);
-    align-items: start;
-    padding-bottom: var(--space-l);
-    border-bottom: 1px solid var(--rule);
+    grid-template-columns: minmax(10rem, 15rem) minmax(0, 1fr);
+    gap: var(--space-l) var(--space-xl);
+    padding-block: var(--space-xl);
+    border-top: 1px solid var(--rule);
+    scroll-margin-top: calc(var(--nav-h) + 4rem);
   }
-  .num { grid-area: num; font-size: var(--step--1); color: var(--hue); margin-bottom: var(--space-2xs); }
-  .title { grid-area: title; font-size: var(--step-5); line-height: 0.9; letter-spacing: -0.04em; font-weight: 400; overflow-wrap: normal; margin-bottom: var(--space-m); }
-  .kicker { grid-area: kicker; color: var(--muted); font-size: var(--step--1); max-width: 26ch; padding-top: 0.4rem; }
-  .head-row .prose { grid-area: prose; font-size: var(--step-1); line-height: 1.5; max-width: 36rem; }
-  .body { padding-top: var(--space-l); }
-
-  .cover { margin-top: var(--space-l); position: relative; }
-  .cover a { display: block; height: clamp(16rem, 52vh, 34rem); overflow: hidden; }
-  .cover :global(picture), .cover :global(img) { display: block; width: 100%; height: 100%; object-fit: cover; object-position: center 30%; }
-  .cover::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(to bottom, var(--night) 0%, transparent 18%, transparent 70%, var(--night) 100%); }
-  .cover figcaption { position: absolute; right: var(--gutter); bottom: var(--space-s); z-index: 1; font-size: var(--step--2); letter-spacing: 0.1em; text-transform: uppercase; color: rgb(255 255 255 / 0.75); }
-
+  .side { position: sticky; top: calc(var(--nav-h) + 4.5rem); align-self: start; }
+  .side h3 { font-size: var(--step-2); }
+  .bar {
+    display: block;
+    width: 2.5rem;
+    height: 3px;
+    border-radius: 2px;
+    margin-block: var(--space-xs);
+    background: var(--hue);
+  }
+  .kicker { color: var(--muted); font-size: var(--step--1); max-width: 22ch; }
+  .main { display: grid; gap: var(--space-m); min-width: 0; }
   .entries { --ledger: 7.5rem; }
-  .entries > li { padding-block: var(--space-s); }
-  .film-entries { margin-bottom: var(--space-l); }
-  .entry-title { font-family: var(--font-display); font-variation-settings: 'SOFT' 100; font-size: var(--step-2); line-height: 1.1; }
-  .entry-role { font-family: var(--font-mono); font-size: var(--step--2); text-transform: uppercase; letter-spacing: 0.1em; color: var(--hue); margin-block: 0.3rem 0.2rem; }
+  .entries > li { padding-block: var(--space-xs); }
+  .entry-title { font-weight: 500; }
+  .entry-role { font-size: var(--step--1); color: var(--hue-ink); margin-top: 0.1rem; }
+  .soon { color: var(--muted); font-style: italic; font-family: var(--font-display); font-variation-settings: 'SOFT' 100; }
 
-  .cinema { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: var(--space-l); }
-  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); gap: var(--space-s); margin-top: var(--space-m); }
-  .out-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-s) var(--space-m); margin-top: var(--space-l); }
+  .photos {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2xs);
+  }
+  .photos a { display: block; border-radius: 0.5rem; overflow: hidden; aspect-ratio: 4 / 5; background: var(--paper-2); }
+  .cap { margin-top: 0.35rem; }
+  /* a lone photo keeps its own shape instead of the 4:5 crop */
+  .photos.single { display: block; }
+  .photos.single[data-orient='portrait'] { width: min(100%, 17rem); }
+  .photos.single[data-orient='landscape'] { width: min(100%, 30rem); }
+  .photos.single a { aspect-ratio: auto; }
+  .photos :global(picture) { display: block; height: 100%; }
+  .photos.single :global(picture),
+  .photos.single :global(img) { height: auto; }
+  .media-row { display: flex; flex-wrap: wrap; gap: var(--space-m); align-items: flex-start; }
+  .media-row > .photos { flex: 1 1 100%; }
+  .media-row > .photos.single { flex: 0 0 auto; }
+  .media-row > .cards { flex: 1 1 18rem; max-width: 26rem; }
+  .photos :global(img) { width: 100%; height: 100%; object-fit: cover; transition: scale 0.5s var(--ease-out); }
+  @media (hover: hover) and (pointer: fine) {
+    .photos a:hover :global(img) { scale: 1.04; }
+  }
+  .videos { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr)); gap: var(--space-m); }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr)); gap: var(--space-s); }
+  .out-row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-s) var(--space-m); }
 
-  @media (max-width: 52rem) {
-    .head-row { grid-template-columns: 1fr; grid-template-areas: 'num' 'title' 'kicker' 'prose'; }
-    .kicker { margin-bottom: var(--space-s); }
+  @media (max-width: 48rem) {
+    .strand { grid-template-columns: 1fr; gap: var(--space-s); padding-block: var(--space-l); }
+    .side { position: static; }
+    .photos { grid-template-columns: repeat(2, 1fr); }
   }
 </style>

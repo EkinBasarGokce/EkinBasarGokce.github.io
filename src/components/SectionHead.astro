@@ -6,25 +6,16 @@ interface Props {
   id: string;
   title: string;
   eyebrow?: string;
-  /** position on the page, printed as 01, 02... */
-  index?: number;
   /** one way out of the section, e.g. "All photographs" */
   exit?: { label: string; href: string };
   level?: 2 | 3;
 }
-const { id, title, eyebrow, index, exit, level = 2 } = Astro.props;
+const { id, title, eyebrow, exit, level = 2 } = Astro.props;
 const Tag = level === 2 ? 'h2' : 'h3';
-const num = index ? String(index).padStart(2, '0') : '';
 ---
 
 <header class="head">
-  {(num || eyebrow) && (
-    <p class="eyebrow">
-      {num && <span class="num">{num}</span>}
-      {num && eyebrow && <span class="line" aria-hidden="true"></span>}
-      {eyebrow && <span>{eyebrow}</span>}
-    </p>
-  )}
+  {eyebrow && <p class="eyebrow">{eyebrow}</p>}
   <div class="head-row">
     <Tag id={`${id}-title`} set:html={inline(title)} />
     {exit && <a class="exit" href={exit.href}>{exit.label} →</a>}

@@ -1,8 +1,7 @@
 ---
 /**
  * Home: the hero, then one component per section file in src/content/sections/,
- * in `order`. The `kind` field picks the component. Sections are numbered
- * 01, 02... in their heads.
+ * in `order`. The `kind` field picks the component.
  */
 import { getCollection } from 'astro:content';
 import Base from '../layouts/Base.astro';
@@ -31,15 +30,13 @@ const sections = (await getCollection('sections', (s) => !s.data.draft)).sort((a
 
 // A section without its own nav item lights up the nav item before it.
 let current = '';
-let n = 0;
 const rows = sections.map((s) => {
   if (s.data.nav) current = s.id;
-  const index = ++n;
-  return { s, navId: current || s.id, index, Component: byKind[s.data.kind] };
+  return { s, navId: current || s.id, Component: byKind[s.data.kind] };
 });
 ---
 
 <Base person>
   <Hero />
-  {rows.map(({ s, navId, index, Component }) => <Component entry={s} navId={navId} index={index} />)}
+  {rows.map(({ s, navId, Component }) => <Component entry={s} navId={navId} />)}
 </Base>

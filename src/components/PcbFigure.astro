@@ -1,0 +1,79 @@
+---
+/** The circuit board drawing for the Beespenser card. Traces draw in when the card scrolls into view. */
+import { board, path } from '../lib/pcb';
+const b = board();
+---
+
+<svg class="pcb" viewBox={`0 0 ${b.w} ${b.h}`} role="img" aria-label="A drawing of a small circuit board: chips, resistors, a crystal, an LED and copper traces on green solder mask">
+  <defs>
+    <linearGradient id="mask" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#22694a" />
+      <stop offset="1" stop-color="#174d34" />
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f1d184" />
+      <stop offset="1" stop-color="#c99a3c" />
+    </linearGradient>
+  </defs>
+
+  <rect class="board" x="6" y="6" width={b.w - 12} height={b.h - 12} rx="16" fill="url(#mask)" />
+
+  <g class="traces">
+    {b.traces.map((t, i) => <path d={path(t.pts)} class:list={[{ wide: t.wide }]} pathLength="1" style={`--i:${i}`} />)}
+  </g>
+
+  <g class="silk">
+    {b.silk.rects.map((r) => <rect x={r.x} y={r.y} width={r.w} height={r.h} rx={r.rx ?? 0} />)}
+    {b.silk.circles.map((c) => <circle cx={c.x} cy={c.y} r={c.r} />)}
+    <path d="M495 264 L505 270 L495 276 Z M506 264 L506 276" />
+  </g>
+
+  <g class="copper">
+    {b.smd.map((r) => <rect x={r.x} y={r.y} width={r.w} height={r.h} rx={r.rx ?? 0} />)}
+    {b.tht.map((p) =>
+      p.square ? <rect x={p.x - p.r} y={p.y - p.r} width={p.r * 2} height={p.r * 2} rx="1.5" /> : <circle cx={p.x} cy={p.y} r={p.r} />,
+    )}
+    {b.vias.map(([x, y]) => <circle cx={x} cy={y} r="4.2" />)}
+    {b.holes.map(([x, y]) => <circle cx={x} cy={y} r="11" />)}
+  </g>
+
+  <g class="drill">
+    {b.tht.map((p) => <circle cx={p.x} cy={p.y} r="3.4" />)}
+    {b.vias.map(([x, y]) => <circle cx={x} cy={y} r="1.7" />)}
+    {b.holes.map(([x, y]) => <circle cx={x} cy={y} r="6.2" />)}
+  </g>
+
+  <g class="bodies">
+    {b.bodies.map((r) => (
+      <g>
+        <rect x={r.x} y={r.y} width={r.w} height={r.h} rx={r.rx ?? 0} />
+        {r.dot && <circle class="pin1" cx={r.dot[0]} cy={r.dot[1]} r="2.6" />}
+      </g>
+    ))}
+  </g>
+
+  <g class="labels">
+    {b.silk.labels.map((l) => (
+      <text x={l.x} y={l.y} text-anchor={l.anchor ?? 'middle'} font-size={l.size ?? 9}>{l.t}</text>
+    ))}
+  </g>
+</svg>
+
+<style>
+  .pcb { width: 100%; height: auto; display: block; filter: drop-shadow(0 18px 30px rgb(20 50 35 / 0.28)); }
+  .board { stroke: #123d29; stroke-width: 2; }
+  .traces path { fill: none; stroke: #3f9460; stroke-width: 3.4; stroke-linecap: round; stroke-linejoin: round; }
+  .traces path.wide { stroke-width: 9; }
+  .silk rect, .silk circle { fill: none; stroke: #f2efe4; stroke-width: 1.6; opacity: 0.9; }
+  .silk path { fill: #f2efe4; stroke: #f2efe4; stroke-width: 1.4; opacity: 0.9; }
+  .copper rect, .copper circle { fill: url(#gold); stroke: #a87d2a; stroke-width: 0.6; }
+  .drill circle { fill: #10120f; }
+  .bodies rect { fill: #1b1c1e; stroke: #2c2e31; stroke-width: 1; }
+  .pin1 { fill: #3a3c40; }
+  .labels text { fill: #f2efe4; font-family: var(--font-body); font-weight: 700; letter-spacing: 0.06em; opacity: 0.92; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    :global(html.js) .traces path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 1.3s cubic-bezier(0.65, 0, 0.35, 1); transition-delay: calc(var(--i) * 70ms + 150ms); }
+    :global(html.js .in) .traces path { stroke-dashoffset: 0; }
+  }
+</style>

@@ -68,11 +68,7 @@ It is served at `/<name>/`. To list it in the footer and the phone menu, add one
 
 ## Add a creative strand
 
-Create `src/content/strands/<id>.md` with `title`, `kicker`, `hue`, `order`, and optional `entries`, `links` and `media` (`photos`, `videos`, `cards`). It appears in Off the clock and in the header while you are there.
-
-`layout` picks how it looks at night: `film` (film strip of its photos), `posters` (one poster per entry; an entry's `photo` prints a photos.yaml photo, `tone` picks a colour scheme: spring, chocolate, royal, news, knight), `band` (panel in the band's colours with `logo`), `cinema` (large videos) or `default` (a dated list). `cover` puts a photos.yaml photo full width at the top.
-
-The big numbers that open Off the clock are the `stats` list in `src/content/sections/off-the-clock.md`.
+Create `src/content/strands/<id>.md` with `title`, `kicker`, `hue`, `order`, and optional `entries`, `links` and `media` (`photos`, `videos`, `cards`). It appears in Off the clock with its own chip.
 
 ## Deploying
 

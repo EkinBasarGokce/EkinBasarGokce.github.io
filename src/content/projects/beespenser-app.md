@@ -1,6 +1,6 @@
 ---
 title: Beespenser desktop app
-summary: The software behind Beespenser's fast prototyping machine. It turns a circuit-board file into toolpaths and runs dispensing, solder paste, drilling and reflow jobs.
+summary: Desktop software for the Beespenser machine. It turns a circuit-board file into toolpaths and streams G-code for dispensing, solder paste, drilling and reflow.
 year: "2025–2026"
 tags: [Tauri, React, FastAPI, Rust]
 hue: amber

@@ -1,11 +1,12 @@
 /*
  * Design tokens. Colours were sampled from the mood image (cream paper,
  * coral, amber, rose-mauve, pale periwinkle). Text is always ink; the raw hues
- * are light, never text.
+ * are light, never text. Contrast is computed against the worst case: text
+ * sitting on a blob centre at full field strength.
  *
- * Day and night: the page is "day" (cream) until you reach Off the clock,
- * where the lights go down. Night is the dark scheme of the same tokens,
- * switched with color-scheme, so every component works in both.
+ *   ink     on paper 16.0:1, on coral core 9.4:1
+ *   muted   on paper  7.8:1, on any core >= 4.6:1
+ *   link    on paper  8.2:1, on coral core 4.8:1
  */
 :root {
   color-scheme: light dark;
@@ -16,15 +17,8 @@
   --mauve: #d597b6;
   --periwinkle: #bbb8d9;
 
-  /* one saturated accent, for hover and focus moments only */
-  --accent: light-dark(#e2412f, #ff6a55);
-
-  /* Eksi's own colours, sampled from the band logo */
-  --eksi-navy: #01285f;
-  --eksi-red: #ff5050;
-
-  --paper: light-dark(#fcfaf5, #121015);
-  --paper-2: light-dark(#f5f0e8, #1d1a22);
+  --paper: light-dark(#fcfaf5, #17141a);
+  --paper-2: light-dark(#f5f0e8, #201c24);
   --ink: light-dark(#211d1a, #f2eee8);
   --muted: light-dark(#544f49, #b8b0a8);
   --rule: light-dark(rgb(33 29 26 / 0.12), rgb(242 238 232 / 0.13));
@@ -38,8 +32,10 @@
   --periwinkle-ink: light-dark(#543f99, #c6c2ee);
 
   --panel: light-dark(rgb(252 250 245 / 0.72), rgb(30 26 34 / 0.66));
-  --nav-bg: light-dark(#fcfaf5, #121015);
+  --nav-bg: light-dark(rgb(252 250 245 / 0.86), rgb(23 20 26 / 0.86));
   --focus: light-dark(#543f99, #c6c2ee);
+  --todo: light-dark(#b0461c, #f6c08f);
+
 
   /* field strength: peak alpha at a blob centre */
   --peak: 60%;
@@ -48,18 +44,15 @@
   /* type */
   --font-display: 'Fraunces Variable', 'Iowan Old Style', Georgia, 'Times New Roman', serif;
   --font-body: 'Figtree Variable', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --font-mono: 'JetBrains Mono Variable', ui-monospace, 'Cascadia Mono', Consolas, monospace;
 
-  /* fluid type scale */
-  --step--2: clamp(0.72rem, 0.7rem + 0.08vw, 0.78rem);
+  /* fluid type scale (Utopia: 320->1240px, 17->19px, 1.2->1.333) */
   --step--1: clamp(0.875rem, 0.86rem + 0.08vw, 0.92rem);
   --step-0: clamp(1.0625rem, 1.019rem + 0.217vw, 1.1875rem);
   --step-1: clamp(1.275rem, 1.19rem + 0.43vw, 1.583rem);
   --step-2: clamp(1.53rem, 1.38rem + 0.75vw, 2.11rem);
   --step-3: clamp(1.836rem, 1.59rem + 1.23vw, 2.81rem);
-  --step-4: clamp(2.4rem, 1.8rem + 3vw, 4.6rem);
-  --step-5: clamp(3rem, 2rem + 5vw, 7rem);
-  --step-6: clamp(3.4rem, 1.6rem + 9vw, 10.5rem);
+  --step-4: clamp(2.2rem, 1.82rem + 1.9vw, 3.75rem);
+  --step-5: clamp(2.64rem, 2.06rem + 2.9vw, 5rem);
 
   /* space */
   --space-3xs: 0.25rem;
@@ -69,18 +62,17 @@
   --space-m: 1.5rem;
   --space-l: 2rem;
   --space-xl: clamp(2.5rem, 2rem + 2vw, 3.5rem);
-  --space-2xl: clamp(4.5rem, 3rem + 5vw, 8rem);
-  --space-3xl: clamp(6rem, 4rem + 8vw, 12rem);
+  --space-2xl: clamp(4rem, 3rem + 4vw, 6.5rem);
+  --space-3xl: clamp(5rem, 3.5rem + 6vw, 9rem);
 
   --gutter: clamp(1rem, 0.6rem + 2vw, 2rem);
-  --wrap: 76rem;
+  --wrap: 72rem;
   --measure: 40rem;
   --ledger: 9rem;
   --nav-h: 3.75rem;
   --radius: 0.85rem;
 
   --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
 }
 
 :root[data-theme='light'] { color-scheme: light; }
@@ -92,14 +84,44 @@
 }
 :root[data-theme='dark'] { --peak: 34%; --grain-a: 0.09; }
 
-/* Night: Off the clock, and the header and field while you are in it. */
+/*
+ * Night: Off the clock is the inverse of the rest of the page. In the light
+ * theme the lights go down (dark stage); in the dark theme they come up
+ * (cream). The header follows while you are inside it.
+ */
 .night,
 :root[data-zone='night'] .site-header {
   color-scheme: dark;
   --paper: #0d0b10;
   --paper-2: #1a1720;
-  --panel: rgb(30 26 36 / 0.7);
-  --nav-bg: #0d0b10;
+  --panel: rgb(30 26 36 / 0.72);
+  --nav-bg: rgb(13 11 16 / 0.92);
   --night: #0d0b10;
+  --spot: rgb(255 226 180 / 0.2);
 }
-.night { --peak: 46%; --grain-a: 0.1; }
+.night { --peak: 44%; --grain-a: 0.1; }
+
+:root[data-theme='dark'] .night,
+:root[data-theme='dark'][data-zone='night'] .site-header {
+  color-scheme: light;
+  --paper: #fcfaf5;
+  --paper-2: #f5f0e8;
+  --panel: rgb(252 250 245 / 0.72);
+  --nav-bg: rgb(252 250 245 / 0.92);
+  --night: #fcfaf5;
+  --spot: rgb(252 124 123 / 0.14);
+}
+:root[data-theme='dark'] .night { --peak: 60%; --grain-a: 0.07; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .night,
+  :root:not([data-theme='light'])[data-zone='night'] .site-header {
+    color-scheme: light;
+    --paper: #fcfaf5;
+    --paper-2: #f5f0e8;
+    --panel: rgb(252 250 245 / 0.72);
+    --nav-bg: rgb(252 250 245 / 0.92);
+    --night: #fcfaf5;
+    --spot: rgb(252 124 123 / 0.14);
+  }
+  :root:not([data-theme='light']) .night { --peak: 60%; --grain-a: 0.07; }
+}

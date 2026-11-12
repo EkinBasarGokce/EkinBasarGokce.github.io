@@ -1,9 +1,9 @@
 ---
-title: Write to me
-eyebrow: Contact
+title: Contact
+eyebrow: Say hello
 nav: Contact
 order: 70
 kind: contact
 hue: coral
 ---
-Research questions go to my Sabancı address, everything else to Gmail.
+Happy to talk about research, engineering, a collaboration, singing lessons or a show.
