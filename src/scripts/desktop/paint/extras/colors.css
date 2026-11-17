@@ -1,0 +1,138 @@
+/* Paint: Colors > Edit Colors (extras/colors.ts), after the 98 colour dialog */
+.pt-dialog.pt-ec[open] {
+  width: fit-content;
+  max-width: calc(100vw - 16px);
+  max-height: calc(100dvh - 16px);
+}
+.pt-ec > form {
+  min-height: 0;
+  overflow-y: auto;
+}
+.ec {
+  --ec-sw-w: 24px;
+  --ec-sw-h: 20px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px 14px;
+  user-select: none;
+}
+@media (pointer: coarse) {
+  .ec {
+    --ec-sw-w: 30px;
+    --ec-sw-h: 26px;
+  }
+}
+.ec-left,
+.ec-right {
+  display: grid;
+  gap: 3px;
+  justify-items: start;
+}
+.ec-right[hidden] {
+  display: none;
+}
+.ec-label {
+  padding-top: 2px;
+}
+.ec-grid {
+  display: grid;
+  grid-template-columns: repeat(8, var(--ec-sw-w));
+  grid-auto-rows: var(--ec-sw-h);
+  gap: 2px 3px;
+  margin-bottom: 6px;
+}
+/* a sunken box of colour; the chosen one has a black frame */
+.ec-sw {
+  padding: 2px;
+  background: none;
+}
+.ec-sw::before {
+  content: '';
+  display: block;
+  height: 100%;
+  background: var(--c);
+  box-shadow: var(--sunken);
+}
+.ec-sw[aria-checked='true'] {
+  box-shadow: inset 0 0 0 1px var(--dark);
+}
+.ec-sw:focus-visible {
+  outline: 1px dotted var(--dark);
+  outline-offset: 1px;
+}
+.ec-wide {
+  justify-self: stretch;
+}
+.ec-pickers {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.ec-spec {
+  padding: 2px;
+  box-shadow: var(--sunken);
+  touch-action: none;
+}
+.ec-spec-in {
+  position: relative;
+  overflow: hidden;
+}
+.ec-spec canvas,
+.ec-lum canvas {
+  display: block;
+  image-rendering: pixelated;
+}
+.ec-cross {
+  position: absolute;
+  translate: -9px -9px;
+  pointer-events: none;
+}
+.ec-lum {
+  display: flex;
+  gap: 1px;
+  padding: 2px 0;
+  touch-action: none;
+}
+.ec-arrow-col {
+  position: relative;
+  width: 8px;
+  align-self: stretch;
+}
+.ec-arrow {
+  position: absolute;
+  left: 0;
+  translate: 0 -6px;
+  pointer-events: none;
+}
+.ec-spec:focus-visible,
+.ec-lum:focus-visible {
+  outline: 1px dotted var(--dark);
+  outline-offset: 2px;
+}
+.ec-bottom {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0 4px;
+}
+.ec-preview-box {
+  display: grid;
+  justify-items: center;
+  gap: 3px;
+}
+.ec-preview {
+  width: 48px;
+  height: 34px;
+  box-shadow: var(--sunken);
+}
+.ec-fields {
+  display: grid;
+  grid-template-columns: auto 40px auto 40px;
+  align-items: center;
+  gap: 3px 5px;
+}
+.ec-fields input {
+  width: 40px;
+  text-align: right;
+}
