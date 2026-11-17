@@ -236,6 +236,7 @@ export function install(core: Core) {
   let viewing: HTMLDialogElement | null = null;
   function viewBitmap() {
     if (viewing) return;
+    core.flush(); // a floating selection or text being typed belongs in the picture first
     const bm = core.bm();
     const d = document.createElement('dialog');
     d.className = 'pt-viewbitmap';
@@ -316,7 +317,8 @@ export function install(core: Core) {
   win.addEventListener('keydown', (e) => {
     if (e.defaultPrevented || !(e.ctrlKey || e.metaKey) || e.altKey) return;
     const t = e.target as HTMLElement;
-    if (t.isContentEditable || t.matches('input, textarea, select')) return;
+    // other fields keep their own keys, but these work while typing in a text box, as in 98
+    if (t.isContentEditable || (t.matches('input, textarea, select') && !t.matches('.pt-textedit'))) return;
     const k = e.key.toLowerCase();
     const action = e.key === 'PageDown' ? 'zoom-4' : e.key === 'PageUp' ? 'zoom-1' : e.shiftKey ? '' : k === 'g' ? 'grid' : k === 'f' ? 'viewbitmap' : '';
     if (!action) return;
