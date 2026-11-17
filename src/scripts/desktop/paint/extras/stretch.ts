@@ -54,12 +54,38 @@ export function skewV(b: R.Bitmap, t: number, bg: R.Color): R.Bitmap {
   return out;
 }
 
-/** stretch (percent) then skew (degrees), as one step */
+const slope = (deg: number) => Math.tan((deg * Math.PI) / 180);
+
+/**
+ * The size of a stretch (percent) then skew (degrees) of a w x h picture.
+ * A stretch past MAX_SIDE is scaled down on both sides alike, so the picture
+ * keeps its shape (`fitted`). A skew is never cut short: `fits` is false
+ * when its result would pass MAX_SIDE.
+ */
+export function stretchSkewSize(w: number, h: number, sh: number, sv: number, kh: number, kv: number) {
+  let fitted = false;
+  if (sh !== 100 || sv !== 100) {
+    const W = (w * sh) / 100;
+    const H = (h * sv) / 100;
+    const k = Math.min(1, MAX_SIDE / W, MAX_SIDE / H);
+    fitted = k < 1;
+    w = clampSide(W * k);
+    h = clampSide(H * k);
+  }
+  const stretched = { w, h };
+  if (kh) w += Math.round((h - 1) * Math.abs(slope(kh)));
+  if (kv) h += Math.round((w - 1) * Math.abs(slope(kv)));
+  return { stretched, w, h, fitted, fits: w <= MAX_SIDE && h <= MAX_SIDE };
+}
+
+/** stretch (percent) then skew (degrees), as one step; the picture comes back unchanged if the skew would not fit */
 export function stretchSkew(b: R.Bitmap, sh: number, sv: number, kh: number, kv: number, bg: R.Color): R.Bitmap {
+  const size = stretchSkewSize(b.w, b.h, sh, sv, kh, kv);
+  if (!size.fits) return b;
   let out = b;
-  if (sh !== 100 || sv !== 100) out = scaleBitmap(out, (out.w * sh) / 100, (out.h * sv) / 100);
-  if (kh) out = skewH(out, Math.tan((kh * Math.PI) / 180), bg);
-  if (kv) out = skewV(out, Math.tan((kv * Math.PI) / 180), bg);
+  if (sh !== 100 || sv !== 100) out = scaleBitmap(out, size.stretched.w, size.stretched.h);
+  if (kh) out = skewH(out, slope(kh), bg);
+  if (kv) out = skewV(out, slope(kv), bg);
   return out;
 }
 
@@ -93,8 +119,11 @@ const ICONS: ((b: R.Bitmap, ink: R.Color) => void)[] = [
   },
 ];
 
+type Values = { sh: number; sv: number; kh: number; kv: number };
+
 export function install(core: Core) {
-  async function stretch() {
+  /** `last`: the values to show again after a skew that would not fit */
+  async function stretch(last: Values = { sh: 100, sv: 100, kh: 0, kv: 0 }) {
     const row = (i: number, id: string, label: string, name: string, min: number, max: number, value: number, unit: string) =>
       `<span data-icon="${i}"></span><label for="${id}">${label}</label>` +
       `<input id="${id}" name="${name}" type="number" inputmode="numeric" required min="${min}" max="${max}" step="1" value="${value}" style="width:56px" />` +
@@ -102,11 +131,11 @@ export function install(core: Core) {
     const grid = 'class="pt-form" style="grid-template-columns:auto auto auto 1fr;gap:6px 8px"';
     const body = core.el(
       `<fieldset><legend>Stretch</legend><div ${grid}>` +
-        row(0, 'pt-sh', 'Horizontal:', 'sh', 1, 500, 100, '%') +
-        row(1, 'pt-sv', 'Vertical:', 'sv', 1, 500, 100, '%') +
+        row(0, 'pt-sh', 'Horizontal:', 'sh', 1, 500, last.sh, '%') +
+        row(1, 'pt-sv', 'Vertical:', 'sv', 1, 500, last.sv, '%') +
         `</div></fieldset><fieldset style="margin-top:14px"><legend>Skew</legend><div ${grid}>` +
-        row(2, 'pt-kh', 'Horizontal:', 'kh', -89, 89, 0, 'Degrees') +
-        row(3, 'pt-kv', 'Vertical:', 'kv', -89, 89, 0, 'Degrees') +
+        row(2, 'pt-kh', 'Horizontal:', 'kh', -89, 89, last.kh, 'Degrees') +
+        row(3, 'pt-kv', 'Vertical:', 'kv', -89, 89, last.kv, 'Degrees') +
         `</div></fieldset>`,
     );
     body.querySelectorAll<HTMLElement>('[data-icon]').forEach((slot) => {
@@ -135,14 +164,27 @@ export function install(core: Core) {
     const kh = num('kh', -89, 89, 0);
     const kv = num('kv', -89, 89, 0);
     if (sh === 100 && sv === 100 && kh === 0 && kv === 0) return;
+    // the selection if there is one, else the picture; a skew that would pass MAX_SIDE is refused, not cut off
+    const box = core.selection?.active() ? core.selection.box() : null;
+    const size = stretchSkewSize(box ? box.x1 - box.x0 + 1 : core.bm().w, box ? box.y1 - box.y0 + 1 : core.bm().h, sh, sv, kh, kv);
+    if (!size.fits) {
+      await core.dialog(
+        'Paint',
+        core.el(`<p class="pt-ask">The picture would be too large. A picture can be at most ${MAX_SIDE} by ${MAX_SIDE} pixels; try a smaller angle or stretch.</p>`),
+        [{ label: 'OK', value: 'ok', primary: true }],
+      );
+      return stretch({ sh, sv, kh, kv });
+    }
     const bg = core.st.bg;
     const fn = (b: R.Bitmap) => stretchSkew(b, sh, sv, kh, kv, bg);
-    if (core.selection?.transform(fn)) return;
+    if (core.selection?.transform(fn)) return fitted(size.fitted);
     core.flush();
     const bm = core.bm();
     const next = fn(R.cloneBitmap(bm));
     if (next.w === bm.w && next.h === bm.h) core.wholeOp(() => core.bm().data.set(next.data));
     else core.replaceOp(next);
+    fitted(size.fitted);
   }
+  const fitted = (yes: boolean) => yes && core.status.help(`Stretched as far as Paint allows (${MAX_SIDE} pixels), keeping the shape.`);
   core.onMenu('stretch', () => void stretch());
 }

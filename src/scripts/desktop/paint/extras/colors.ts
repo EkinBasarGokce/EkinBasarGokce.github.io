@@ -448,7 +448,10 @@ export function install(core: Core) {
       pointer = e.pointerType;
       downAt = e.timeStamp;
     });
-    sw.addEventListener('dblclick', open);
+    // Only a mouse's dblclick: Chrome also sends one for two quick taps on
+    // neighbouring swatches, or a long press and then a tap. A finger's or a
+    // pen's double tap on this swatch is caught below.
+    sw.addEventListener('dblclick', () => pointer === 'mouse' && open());
     sw.addEventListener('click', (e) => {
       // a finger's double tap does not always become a dblclick
       if (pointer === 'mouse' || e.detail === 0) return;

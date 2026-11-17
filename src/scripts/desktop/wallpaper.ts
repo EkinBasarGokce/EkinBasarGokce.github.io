@@ -6,7 +6,9 @@
  *
  * The picture is a layer just above the photo wallpaper (`.wallpaper`, hidden
  * while a picture is shown) and below the icons and windows. It takes no
- * pointer input, so a press on it is a press on the empty desktop.
+ * pointer input, so a press on it is a press on the empty desktop. While it
+ * is shown the desktop ([data-desktop]) has the class `custom-wallpaper`, so
+ * the icon labels can get a solid background (they are tuned for the photo).
  *
  * The choice is kept in this browser (localStorage 'desktop-wallpaper-v1': a
  * PNG data URL and the mode). A picture too large to keep, or storage that is
@@ -29,8 +31,11 @@ let objectUrl: string | null = null;
 const desktop = () => document.querySelector<HTMLElement>('[data-desktop]');
 const photo = (desk: HTMLElement) => desk.querySelector<HTMLElement>('.wallpaper');
 const layerOf = (desk: HTMLElement) => desk.querySelector<HTMLElement>(':scope > [data-custom-wallpaper]');
+/** set on the desktop while the visitor's picture is shown (win98.css gives the icon labels a solid background then) */
+const SHOWN_CLASS = 'custom-wallpaper';
 
 function makeLayer(desk: HTMLElement) {
+  desk.classList.add(SHOWN_CLASS);
   let el = layerOf(desk);
   if (el) return el;
   el = document.createElement('div');
@@ -136,6 +141,7 @@ export function resetWallpaper(): void {
   const desk = desktop();
   if (desk) {
     layerOf(desk)?.remove();
+    desk.classList.remove(SHOWN_CLASS);
     photo(desk)?.removeAttribute('hidden');
   }
   dropObjectUrl();
