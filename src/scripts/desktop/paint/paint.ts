@@ -534,8 +534,13 @@ function setup(wm: WM) {
   });
   toolButtons.forEach((b, i) => {
     b.addEventListener('click', () => setTool(b.dataset.tool as ToolId));
-    b.addEventListener('mouseenter', () => (helpLine.textContent = tools.get(b.dataset.tool as ToolId)?.help ?? ''));
-    b.addEventListener('mouseleave', () => (helpLine.textContent = tool()?.help ?? ''));
+    // pointing at a tool shows its help; leaving puts back whatever the status said (a shape's own hint)
+    let saved = '';
+    b.addEventListener('mouseenter', () => {
+      saved = helpLine.textContent ?? '';
+      helpLine.textContent = tools.get(b.dataset.tool as ToolId)?.help ?? '';
+    });
+    b.addEventListener('mouseleave', () => (helpLine.textContent = saved || (tool()?.help ?? '')));
     b.addEventListener('keydown', (e) => {
       const d = { ArrowDown: 2, ArrowUp: -2, ArrowRight: 1, ArrowLeft: -1 }[e.key];
       if (!d) return;
@@ -576,10 +581,11 @@ function setup(wm: WM) {
       b.setAttribute('aria-pressed', String(i === current));
       b.setAttribute('aria-label', label(i));
       b.append(preview(w, h, (bm2, ink) => draw(i, bm2, ink), i === current));
-      b.addEventListener('click', () => {
+      b.addEventListener('click', (ev) => {
         pick(i);
         drawOptions();
-        optionsBox.querySelectorAll<HTMLElement>('.pt-opt')[i]?.focus();
+        // from the keyboard, stay on the options; a mouse click leaves the keyboard on the picture
+        if (ev.detail === 0) optionsBox.querySelectorAll<HTMLElement>('.pt-opt')[i]?.focus();
       });
       grid.append(b);
     }

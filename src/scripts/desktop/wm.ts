@@ -153,8 +153,10 @@ export class WM {
     }
     if (from) this.returnTo.set(id, from);
     if (el.hasAttribute('data-open')) {
+      const wasMin = el.hasAttribute('data-min');
       el.removeAttribute('data-min');
       this.keepInside();
+      if (wasMin && this.compact.matches && history.state?.win !== id) history.pushState({ win: id }, '', `#${id}`);
       this.focus(id, true);
       return;
     }

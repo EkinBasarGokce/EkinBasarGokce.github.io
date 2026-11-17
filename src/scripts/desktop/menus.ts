@@ -13,6 +13,7 @@ const topButtons = (bar: Element) => [...bar.querySelectorAll<HTMLElement>(':sco
 
 export function initMenus() {
   let open: HTMLElement | null = null; // the .mb whose drop-down is showing
+  let returnTo: HTMLElement | null = null; // what had the keyboard when it opened
 
   const close = (focusButton = false) => {
     if (!open) return;
@@ -20,29 +21,46 @@ export function initMenus() {
     open.removeAttribute('data-open');
     open.querySelectorAll('[data-sub-open]').forEach((x) => x.removeAttribute('data-sub-open'));
     btn.setAttribute('aria-expanded', 'false');
+    const back = returnTo;
     open = null;
-    if (focusButton) btn.focus();
+    returnTo = null;
+    if (!focusButton) return;
+    // back to the text or picture the menu was opened from, else the menu title
+    if (back && back !== btn && back.isConnected && back !== document.body) back.focus({ preventScroll: true });
+    else btn.focus();
   };
   const show = (mb: HTMLElement, focusFirst = false) => {
     if (open && open !== mb) close();
+    if (!open) returnTo = document.activeElement as HTMLElement | null;
     open = mb;
     mb.setAttribute('data-open', '');
     mb.querySelector(':scope > .mb-btn')!.setAttribute('aria-expanded', 'true');
     if (focusFirst) itemsOf(mb.querySelector(':scope > .menu')!)[0]?.focus();
   };
 
-  document.addEventListener('pointerdown', (e) => {
-    const t = e.target as HTMLElement;
-    const btn = t.closest<HTMLElement>('.mb-btn');
-    if (btn) {
-      e.preventDefault(); // keep the caret where it was (Notepad)
-      const mb = btn.parentElement!;
-      if (open === mb) close();
-      else show(mb);
-      return;
-    }
-    if (open && !open.contains(t)) close();
-  });
+  document.addEventListener(
+    'pointerdown',
+    (e) => {
+      const t = e.target as HTMLElement;
+      const btn = t.closest<HTMLElement>('.mb-btn');
+      if (btn) {
+        e.preventDefault(); // keep the caret where it was (Notepad)
+        const mb = btn.parentElement!;
+        if (open === mb) close();
+        else show(mb);
+        return;
+      }
+      // a mouse press on a menu item doesn't move the keyboard either
+      if (e.pointerType === 'mouse' && t.closest('.mi')) e.preventDefault();
+      if (open && !open.contains(t)) {
+        // as in 98, a press outside an open menu only closes it
+        close();
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    },
+    true,
+  );
 
   // while one menu is open, pointing at another title on the same bar opens that one
   document.addEventListener('pointerover', (e) => {
@@ -90,6 +108,7 @@ export function initMenus() {
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();
+        returnTo = null; // the keyboard never left; leave it there
         close();
       } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
         e.preventDefault();

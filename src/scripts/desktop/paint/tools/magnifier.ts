@@ -73,7 +73,7 @@ export function install(core: Core) {
     const bm = core.bm();
     // typing in a text box: zoom around the box, so it stays in view
     const frame = core.overlay.querySelector<HTMLElement>('.pt-textframe');
-    if (frame && frame.getClientRects().length && core.overlay.contains(document.activeElement)) {
+    if (frame && frame.getClientRects().length && core.currentTool() === 'text') {
       const r = frame.getBoundingClientRect();
       const p = core.toPixel({ clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 });
       return { x: clamp(p.x, 0, bm.w - 1), y: clamp(p.y, 0, bm.h - 1) };

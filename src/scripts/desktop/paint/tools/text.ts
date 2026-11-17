@@ -90,6 +90,13 @@ export function install(core: Core) {
   let lines: Line[] = [];
   let frame: HTMLElement | null = null;
   let ta: HTMLTextAreaElement | null = null;
+  // a press on a plain part of the window (status bar, grey area, borders)
+  // must not take the caret out of an open box, as in 98
+  core.win.addEventListener('pointerdown', (e) => {
+    if (!ta || e.pointerType !== 'mouse') return;
+    const target = e.target as HTMLElement;
+    if (!target.closest('button, input, select, textarea, a, canvas, [contenteditable], .pt-overlay, .pt-fontbar, .title, .rz')) e.preventDefault();
+  });
   let twin: HTMLElement | null = null;
   let lastAt: Pt = { x: 0, y: 0 };
   /** the text has been edited since the box opened (so the textarea has its own undo) */
@@ -351,14 +358,6 @@ export function install(core: Core) {
       t.scrollLeft = 0;
     });
     for (const ev of ['select', 'keyup', 'pointerup', 'focus']) t.addEventListener(ev, syncEditMenu);
-    // a press on a plain part of the window (status bar, grey area, borders)
-    // must not take the caret out of the box, as in 98
-    const keepCaret = (e: PointerEvent) => {
-      if (!ta || e.pointerType !== 'mouse') return;
-      const target = e.target as HTMLElement;
-      if (!target.closest('button, input, select, textarea, a, canvas, [contenteditable], .pt-overlay, .pt-fontbar, .title, .rz')) e.preventDefault();
-    };
-    core.win.addEventListener('pointerdown', keepCaret);
     t.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !e.isComposing) {
         e.preventDefault();

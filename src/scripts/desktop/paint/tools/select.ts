@@ -264,6 +264,11 @@ export function install(core: Core) {
   let writeId = 0;
   let newestDone = false; // the newest write has settled
   let lastFailed = false; // the newest write failed or was never possible
+  /** the images Paint has put (or tried to put) on the system clipboard, newest last */
+  const written: R.Bitmap[] = [];
+  /** the visitor left the page after Paint's last copy (they may have copied something elsewhere) */
+  let leftSinceCopy = false;
+  window.addEventListener('blur', () => (leftSinceCopy = true));
   let shownBg: R.Color | null = null;
   let lastBm = core.bm();
 
@@ -648,6 +653,9 @@ export function install(core: Core) {
     writing = false;
     newestDone = false;
     lastFailed = true; // until this write succeeds
+    leftSinceCopy = false;
+    written.push(img);
+    if (written.length > 4) written.shift();
     try {
       if (typeof ClipboardItem === 'function' && navigator.clipboard?.write) {
         writing = true;
@@ -676,15 +684,31 @@ export function install(core: Core) {
     }
     return true;
   }
-  /** the image to paste is `clip`, not what the system clipboard holds */
-  const pasteClip = () => !!clip && sysStale;
-  // Coming back to the page after a copy whose write failed (or was never
-  // possible): something may have been copied elsewhere since, so the system
-  // clipboard is the newer one again.
-  window.addEventListener('focus', () => {
-    // only after a write that worked: if Paint could not write, its own copy stays the one to paste
-    if (!writing && !lastFailed) sysStale = false;
-  });
+  /** two images are the same picture (size, and every opaque pixel, sampled) */
+  const same = (a: R.Bitmap, b: R.Bitmap) => {
+    if (a.w !== b.w || a.h !== b.h) return false;
+    const n = a.data.length;
+    const step = Math.max(1, Math.floor(n / 4096));
+    for (let i = 0; i < n; i += step) {
+      const p = a.data[i] >>> 0;
+      const q = b.data[i] >>> 0;
+      if (p >>> 24 === 0xff || q >>> 24 === 0xff ? p !== q : p >>> 24 !== q >>> 24) return false;
+    }
+    return true;
+  };
+  /**
+   * What to paste, given the image on the system clipboard (or none):
+   * Paint's own newest copy unless the system image is newer than it.
+   */
+  function choose(sys: R.Bitmap | null): R.Bitmap | null {
+    if (!clip) return sys;
+    if (!sys || same(sys, clip)) return R.cloneBitmap(clip);
+    // one of Paint's own older copies that landed late: stale
+    if (written.some((w) => w !== clip && same(sys, w))) return R.cloneBitmap(clip);
+    // something copied elsewhere: newer only if it could have been copied after Paint's copy
+    if (writing || (lastFailed && !leftSinceCopy) || (sysStale && !leftSinceCopy)) return R.cloneBitmap(clip);
+    return sys;
+  }
   /** an image file or blob to a floating bitmap (scaled to fit MAX_SIDE), or null */
   async function decode(blob: Blob): Promise<R.Bitmap | null> {
     let pic: ImageBitmap | null = null;
@@ -748,7 +772,6 @@ export function install(core: Core) {
     setSel({ box: { x0: at.x, y0: at.y, x1: at.x + img.w - 1, y1: at.y + img.h - 1 }, mask: null, float: img });
   }
   async function pasteClipboard() {
-    if (pasteClip()) return paste(R.cloneBitmap(clip!));
     let img: R.Bitmap | null = null;
     try {
       for (const item of await navigator.clipboard.read()) {
@@ -760,7 +783,7 @@ export function install(core: Core) {
     } catch {
       // no permission, no Clipboard API, or nothing readable: use the internal copy
     }
-    img ??= clip && R.cloneBitmap(clip);
+    img = choose(img);
     if (img) await paste(img);
   }
   // Ctrl+V: the core leaves it to the browser, whose paste event carries the clipboard
@@ -768,15 +791,14 @@ export function install(core: Core) {
     const a = document.activeElement as HTMLElement | null;
     if (!a || !core.win.contains(a) || a.matches('input, textarea, select') || a.isContentEditable) return;
     const items = [...(e.clipboardData?.items ?? [])];
-    const file = pasteClip()
-      ? null
-      : (items.find((it) => it.kind === 'file' && it.type.startsWith('image/'))?.getAsFile() ??
-        [...(e.clipboardData?.files ?? [])].find((f) => f.type.startsWith('image/')) ??
-        null);
+    const file =
+      items.find((it) => it.kind === 'file' && it.type.startsWith('image/'))?.getAsFile() ??
+      [...(e.clipboardData?.files ?? [])].find((f) => f.type.startsWith('image/')) ??
+      null;
     if (!file && !clip) return;
     e.preventDefault();
     void (async () => {
-      const img = (file && (await decode(file))) || (clip && R.cloneBitmap(clip));
+      const img = choose(file && (await decode(file)));
       if (img) await paste(img);
     })();
   });

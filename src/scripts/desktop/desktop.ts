@@ -263,7 +263,7 @@ function icons(wm: WM) {
   const openMenuAt = (clientX: number, clientY: number, focus: boolean) => {
     const z = zoom();
     menu.querySelector('[data-action="wallpaper"]')?.setAttribute('aria-disabled', String(!hasCustomWallpaper()));
-    menu.showPopover();
+    if (!menu.matches(':popover-open')) menu.showPopover();
     menu.style.left = px(Math.max(0, Math.min(clientX / z, innerWidth / z - menu.offsetWidth - 2)));
     menu.style.top = px(Math.max(0, Math.min(clientY / z, innerHeight / z - menu.offsetHeight - 2)));
     if (focus) menu.querySelector<HTMLElement>('.mi')?.focus({ preventScroll: true }); // arrows, Enter and Esc work at once
@@ -271,14 +271,18 @@ function icons(wm: WM) {
   wm.desk.addEventListener('contextmenu', (e) => {
     if (!isBackground(e.target as HTMLElement)) return; // icons and windows keep the browser's own menu
     e.preventDefault();
-    if (!menu.matches(':popover-open')) openMenuAt(e.clientX, e.clientY, true);
+    openMenuAt(e.clientX, e.clientY, true);
   });
-  // touch screens that send no contextmenu on a long press (iPhone): hold a finger still
+  // Touch screens that send no contextmenu on a long press (iPhone): hold a
+  // finger still, and the menu opens when it lifts (opening it under the
+  // finger would let the lift close it, or tap an item).
   let hold = 0;
+  let held = false;
   let holdAt: [number, number] = [0, 0];
   const cancelHold = () => {
     clearTimeout(hold);
     hold = 0;
+    held = false;
   };
   wm.desk.addEventListener('pointerdown', (e) => {
     if (e.pointerType === 'mouse' || !isBackground(e.target as HTMLElement)) return;
@@ -286,13 +290,20 @@ function icons(wm: WM) {
     cancelHold();
     hold = window.setTimeout(() => {
       hold = 0;
-      openMenuAt(holdAt[0], holdAt[1], false);
+      held = true;
     }, 600);
   });
   wm.desk.addEventListener('pointermove', (e) => {
-    if (hold && Math.hypot(e.clientX - holdAt[0], e.clientY - holdAt[1]) > 10) cancelHold();
+    if ((hold || held) && Math.hypot(e.clientX - holdAt[0], e.clientY - holdAt[1]) > 10) cancelHold();
   });
-  for (const ev of ['pointerup', 'pointercancel'] as const) wm.desk.addEventListener(ev, cancelHold);
+  wm.desk.addEventListener('pointerup', () => {
+    const open = held;
+    cancelHold();
+    if (open) window.setTimeout(() => openMenuAt(holdAt[0], holdAt[1], false), 80);
+  });
+  wm.desk.addEventListener('pointercancel', cancelHold);
+  // a long press that the browser turns into a contextmenu already opened it
+  menu.addEventListener('toggle', (e) => (e as ToggleEvent).newState === 'open' && cancelHold());
   menu.addEventListener('menu', (e) => {
     const action = (e as CustomEvent<string>).detail;
     if (action === 'arrange') {
