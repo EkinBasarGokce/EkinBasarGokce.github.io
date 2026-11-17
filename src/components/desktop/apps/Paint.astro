@@ -10,15 +10,22 @@ import Window from '../Window.astro';
 import type { Menu } from '../types';
 import { toolUri, type ToolName } from '../../../lib/pixel';
 
+// the 16 tools in their 98 order, two to a row
 const TOOLS: [ToolName, string][] = [
+  ['freeselect', 'Free-Form Select'],
+  ['select', 'Select'],
   ['eraser', 'Eraser/Color Eraser'],
   ['fill', 'Fill With Color'],
   ['pick', 'Pick Color'],
+  ['magnifier', 'Magnifier'],
   ['pencil', 'Pencil'],
   ['brush', 'Brush'],
   ['airbrush', 'Airbrush'],
+  ['text', 'Text'],
   ['line', 'Line'],
+  ['curve', 'Curve'],
   ['rect', 'Rectangle'],
+  ['polygon', 'Polygon'],
   ['ellipse', 'Ellipse'],
   ['roundrect', 'Rounded Rectangle'],
 ];
@@ -40,6 +47,9 @@ const menus: Menu[] = [
       { label: '&Save', action: 'save', key: 'Ctrl+S' },
       { label: 'Save &As...', action: 'saveas' },
       'sep',
+      { label: 'Set As &Wallpaper (Tiled)', action: 'wallpaper-tile' },
+      { label: 'Set As Wa&llpaper (Centered)', action: 'wallpaper-center' },
+      'sep',
       { label: 'E&xit', action: 'close' },
     ],
   },
@@ -48,6 +58,15 @@ const menus: Menu[] = [
     items: [
       { label: '&Undo', action: 'undo', key: 'Ctrl+Z' },
       { label: '&Repeat', action: 'redo', key: 'Ctrl+Y' },
+      'sep',
+      { label: 'Cu&t', action: 'cut', key: 'Ctrl+X' },
+      { label: '&Copy', action: 'copy', key: 'Ctrl+C' },
+      { label: '&Paste', action: 'paste', key: 'Ctrl+V' },
+      { label: 'C&lear Selection', action: 'clearsel', key: 'Del' },
+      { label: 'Select &All', action: 'selectall', key: 'Ctrl+A' },
+      'sep',
+      { label: 'C&opy To...', action: 'copyto' },
+      { label: 'Paste &From...', action: 'pastefrom' },
     ],
   },
   {
@@ -56,17 +75,32 @@ const menus: Menu[] = [
       { label: '&Tool Box', action: 'view-tools', checked: true },
       { label: '&Color Box', action: 'view-colors', checked: true },
       { label: '&Status Bar', action: 'view-status', checked: true },
+      'sep',
+      {
+        label: '&Zoom',
+        items: [
+          { label: '&Normal Size', action: 'zoom-1' },
+          { label: '&Large Size', action: 'zoom-4' },
+          { label: 'C&ustom...', action: 'zoom-custom' },
+          'sep',
+          { label: 'Show &Grid', action: 'grid', checked: false },
+        ],
+      },
+      { label: '&View Bitmap', action: 'viewbitmap' },
     ],
   },
   {
     label: '&Image',
     items: [
       { label: '&Flip/Rotate...', action: 'fliprotate' },
+      { label: '&Stretch/Skew...', action: 'stretch' },
       { label: '&Invert Colors', action: 'invert', key: 'Ctrl+I' },
       { label: '&Attributes...', action: 'attributes' },
       { label: '&Clear Image', action: 'clear' },
+      { label: '&Draw Opaque', action: 'opaque', checked: true },
     ],
   },
+  { label: '&Colors', items: [{ label: '&Edit Colors...', action: 'editcolors' }] },
   { label: '&Help', items: [{ label: '&About Paint', action: 'about' }] },
 ];
 ---
@@ -96,6 +130,7 @@ const menus: Menu[] = [
     <div class="pt-view" data-pt-view>
       <div class="pt-paper" data-pt-paper>
         <canvas width="480" height="300" tabindex="0" aria-label="Picture. Draw with the mouse, a pen or a finger." data-pt-canvas></canvas>
+        <div class="pt-overlay" data-pt-overlay></div>
         <span class="pt-handle" data-pt-handle="e" title="Drag to change the picture's width" aria-hidden="true"></span>
         <span class="pt-handle" data-pt-handle="s" title="Drag to change the picture's height" aria-hidden="true"></span>
         <span class="pt-handle" data-pt-handle="se" title="Drag to change the picture's size" aria-hidden="true"></span>

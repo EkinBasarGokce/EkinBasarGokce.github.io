@@ -1,51 +1,40 @@
 /**
- * Paint: the controller. Tools, colours, undo, files, autosave and dialogs.
+ * Paint: the controller. It owns the picture, undo, files, autosave, dialogs,
+ * colours, the view (zoom, overlay) and the menus, and implements the Core
+ * contract (core.ts) that the tool and feature modules are written against.
  * Pixels are drawn by raster.ts into a Bitmap whose memory is shared with an
  * ImageData, so showing a change is one putImageData of the changed box.
  * Loaded the first time the Paint window opens (see scripts/desktop/apps.ts).
  */
 import type { WM } from '../wm';
 import * as R from './raster';
+import {
+  type Core,
+  type Tool,
+  type ToolId,
+  type PointerInfo,
+  type Pt,
+  type DialogButton,
+  WHITE,
+  BLACK,
+  MAX_SIDE,
+  LINE_WIDTHS,
+  hex,
+  parseHex,
+  union,
+  wholeBox,
+  imageOf,
+} from './core';
+import { install as installBasic } from './tools/basic';
 
-type ToolId = 'eraser' | 'fill' | 'pick' | 'pencil' | 'brush' | 'airbrush' | 'line' | 'rect' | 'ellipse' | 'roundrect';
 type Patch = { kind: 'box'; box: R.Box; before: Uint32Array; after: Uint32Array } | { kind: 'full'; before: R.Bitmap; after: R.Bitmap };
 
-const WHITE = R.rgb(255, 255, 255);
-const BLACK = R.rgb(0, 0, 0);
 const STORE = 'paint-autosave-v1';
 const MAX_UNDO = 100;
 const MAX_UNDO_BYTES = 96 * 1024 * 1024;
-const MAX_SIDE = 2048;
 
-const ERASER_SIZES = [4, 6, 8, 10];
-const AIR_RADII = [4, 8, 12];
-const LINE_WIDTHS = [1, 2, 3, 4, 5];
-const BRUSHES: (() => R.Stamp)[] = [
-  () => R.stamps.round(8), () => R.stamps.round(5), () => R.stamps.round(2),
-  () => R.stamps.square(8), () => R.stamps.square(5), () => R.stamps.square(2),
-  () => R.stamps.slash(8), () => R.stamps.slash(5), () => R.stamps.slash(2),
-  () => R.stamps.backslash(8), () => R.stamps.backslash(5), () => R.stamps.backslash(2),
-];
-
-const HELP: Record<ToolId, string> = {
-  eraser: 'Erases to the background color. Right-drag changes only the foreground color.',
-  fill: 'Fills an enclosed area with the current color.',
-  pick: 'Picks up a color from the picture.',
-  pencil: 'Draws a free-form line one pixel wide.',
-  brush: 'Draws with the chosen brush shape.',
-  airbrush: 'Sprays paint. Hold still for a denser spray.',
-  line: 'Draws a straight line. Hold Shift for steps of 45 degrees.',
-  rect: 'Draws a rectangle. Hold Shift for a square.',
-  ellipse: 'Draws an ellipse. Hold Shift for a circle.',
-  roundrect: 'Draws a rounded rectangle. Hold Shift for a square.',
-};
-
-const hex = (c: R.Color) => '#' + R.toRGB(c).map((v) => v.toString(16).padStart(2, '0')).join('');
-const parseHex = (h: string) => R.rgb(parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16));
-const union = (a: R.Box | null, b: R.Box | null): R.Box | null =>
-  !a ? b : !b ? a : { x0: Math.min(a.x0, b.x0), y0: Math.min(a.y0, b.y0), x1: Math.max(a.x1, b.x1), y1: Math.max(a.y1, b.y1) };
-const area = (b: R.Box) => (b.x1 - b.x0 + 1) * (b.y1 - b.y0 + 1);
-const wholeBox = (bm: R.Bitmap): R.Box => ({ x0: 0, y0: 0, x1: bm.w - 1, y1: bm.h - 1 });
+/** feature modules, installed after the basic tools (each exports install(core)) */
+const MODULES = import.meta.glob<{ install: (core: Core) => void }>(['./tools/*.ts', './extras/*.ts', '!./tools/basic.ts', '!./**/*.test.ts'], { eager: true });
 
 let started = false;
 
@@ -62,6 +51,7 @@ function setup(wm: WM) {
   const canvas = $<HTMLCanvasElement>('[data-pt-canvas]');
   const ctx = canvas.getContext('2d')!;
   const view = $('[data-pt-view]');
+  const overlay = $('[data-pt-overlay]');
   const ghost = $('[data-pt-ghost]');
   const optionsBox = $('[data-pt-options]');
   const helpLine = $('[data-pt-help]');
@@ -69,30 +59,25 @@ function setup(wm: WM) {
   const sizeLine = $('[data-pt-size]');
   const fileInput = $<HTMLInputElement>('[data-pt-file]');
   const toolButtons = [...win.querySelectorAll<HTMLButtonElement>('[data-tool]')];
+  const swatches = [...win.querySelectorAll<HTMLButtonElement>('[data-color]')];
 
   // ── State ────────────────────────────────────────────────────────
-  const st = {
-    tool: 'pencil' as ToolId,
-    prevTool: 'pencil' as ToolId,
-    fg: BLACK,
-    bg: WHITE,
-    eraser: 2,
-    brush: 0,
-    air: 1,
-    line: 0,
-    fillStyle: 0,
-  };
+  const st = { fg: BLACK, bg: WHITE, line: 0, fillStyle: 0, opaque: true };
+  const tools = new Map<ToolId, Tool>();
+  let toolId: ToolId = 'pencil';
+  let prevToolId: ToolId = 'pencil';
   let bm = R.createBitmap(canvas.width, canvas.height, WHITE);
   let img = imageOf(bm);
+  let zoomLevel = 1;
   let name = 'untitled';
   let named = false;
   let dirty = false;
   const undo: Patch[] = [];
   const redo: Patch[] = [];
+  const menus = new Map<string, () => void>();
+  const layoutFns: (() => void)[] = [];
+  const tool = () => tools.get(toolId);
 
-  function imageOf(b: R.Bitmap) {
-    return new ImageData(new Uint8ClampedArray(b.data.buffer as ArrayBuffer, b.data.byteOffset, b.data.byteLength), b.w, b.h);
-  }
   /** show the changed part of the picture; inside an operation, remember the box for undo */
   let opBefore: R.Bitmap | null = null;
   let opBox: R.Box | null = null;
@@ -102,6 +87,16 @@ function setup(wm: WM) {
     if (opBefore) opBox = union(opBox, d);
     ctx.putImageData(img, 0, 0, d.x0, d.y0, d.x1 - d.x0 + 1, d.y1 - d.y0 + 1);
   }
+  /** size the canvas and the overlay for the picture and the zoom */
+  function layout() {
+    const w = `${bm.w * zoomLevel}px`;
+    const h = `${bm.h * zoomLevel}px`;
+    canvas.style.width = w;
+    canvas.style.height = h;
+    overlay.style.width = w;
+    overlay.style.height = h;
+    for (const fn of layoutFns) fn();
+  }
   /** a new bitmap (new, open, resize, rotate): resize the canvas and show all of it */
   function adopt(next: R.Bitmap) {
     bm = next;
@@ -110,10 +105,11 @@ function setup(wm: WM) {
     canvas.height = bm.h;
     R.takeDirty(bm);
     ctx.putImageData(img, 0, 0);
+    layout();
   }
 
   // ── Undo ─────────────────────────────────────────────────────────
-  const bytes = (p: Patch) => (p.kind === 'box' ? p.before.byteLength * 2 : (p.before.data.byteLength + p.after.data.byteLength));
+  const bytes = (p: Patch) => (p.kind === 'box' ? p.before.byteLength * 2 : p.before.data.byteLength + p.after.data.byteLength);
   function push(p: Patch) {
     undo.push(p);
     redo.length = 0;
@@ -128,9 +124,7 @@ function setup(wm: WM) {
   }
   function endOp() {
     render();
-    if (opBefore && opBox) {
-      push({ kind: 'box', box: opBox, before: R.extract(opBefore, opBox), after: R.extract(bm, opBox) });
-    }
+    if (opBefore && opBox) push({ kind: 'box', box: opBox, before: R.extract(opBefore, opBox), after: R.extract(bm, opBox) });
     opBefore = null;
     opBox = null;
   }
@@ -141,14 +135,12 @@ function setup(wm: WM) {
     opBox = null;
     if (box) render();
   }
-  /** a change to the whole picture that keeps its size */
   function wholeOp(fn: () => void) {
     beginOp();
     fn();
     R.markDirty(bm, wholeBox(bm));
     endOp();
   }
-  /** a change that replaces the bitmap (size may change) */
   function replaceOp(next: R.Bitmap) {
     const before = R.cloneBitmap(bm);
     adopt(next);
@@ -156,6 +148,7 @@ function setup(wm: WM) {
   }
   function step(from: Patch[], to: Patch[], back: boolean) {
     if (drag) return;
+    flush();
     const p = from.pop();
     if (!p) return;
     if (p.kind === 'box') {
@@ -164,6 +157,9 @@ function setup(wm: WM) {
     } else adopt(R.cloneBitmap(back ? p.before : p.after));
     to.push(p);
     changed();
+  }
+  function flush() {
+    tool()?.flush?.();
   }
 
   // ── Title, dirty flag and autosave ───────────────────────────────
@@ -207,7 +203,7 @@ function setup(wm: WM) {
     return true;
   }
 
-  // ── Turning images into bitmaps ──────────────────────────────────
+  // ── Turning images into bitmaps and back ─────────────────────────
   async function bitmapFromSource(src: CanvasImageSource & { width: number; height: number }) {
     // pictures larger than Paint can hold are scaled down to fit, not cropped
     const k = Math.min(1, MAX_SIDE / Math.max(src.width, src.height, 1));
@@ -223,6 +219,7 @@ function setup(wm: WM) {
     const data = cx.getImageData(0, 0, w, h).data;
     const out = R.createBitmap(w, h, WHITE);
     out.data.set(new Uint32Array(data.buffer, data.byteOffset, w * h));
+    R.takeDirty(out);
     return out;
   }
   function bitmapFromUrl(url: string) {
@@ -233,9 +230,59 @@ function setup(wm: WM) {
       im.src = url;
     });
   }
+  function toPng(b: R.Bitmap) {
+    const c = document.createElement('canvas');
+    c.width = b.w;
+    c.height = b.h;
+    c.getContext('2d')!.putImageData(imageOf(b), 0, 0);
+    return new Promise<Blob>((resolve, reject) => c.toBlob((blob) => (blob ? resolve(blob) : reject(new Error('PNG'))), 'image/png'));
+  }
+  function download(file: string, blob: Blob) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = file;
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  }
+  /** the hidden file input, shared by Open and Paste From */
+  let pickResolve: ((f: File | null) => void) | null = null;
+  function pickFile() {
+    return new Promise<File | null>((resolve) => {
+      pickResolve?.(null);
+      pickResolve = resolve;
+      fileInput.value = '';
+      fileInput.click();
+    });
+  }
+  fileInput.addEventListener('change', () => {
+    const f = fileInput.files?.[0] ?? null;
+    pickResolve?.(f);
+    pickResolve = null;
+  });
+  fileInput.addEventListener('cancel', () => {
+    pickResolve?.(null);
+    pickResolve = null;
+  });
+  async function pickImage() {
+    const file = await pickFile();
+    if (!file) return null;
+    try {
+      const pic = await createImageBitmap(file);
+      const out = await bitmapFromSource(pic);
+      pic.close();
+      return out;
+    } catch {
+      await cantRead();
+      return null;
+    }
+  }
+  const cantRead = () =>
+    dialog('Paint', el(`<p class="pt-ask">Paint cannot read this file. Try a PNG, JPEG, GIF, BMP or WebP picture.</p>`), [{ label: 'OK', value: 'ok', primary: true }]);
 
   // ── Dialogs (native <dialog>, dressed as 98 windows) ─────────────
-  function dialog(heading: string, body: HTMLElement, buttons: { label: string; value: string; primary?: boolean }[]) {
+  function dialog(heading: string, body: HTMLElement, buttons: DialogButton[]) {
     return new Promise<{ value: string; form: HTMLFormElement }>((resolve) => {
       const d = document.createElement('dialog');
       d.className = 'win pt-dialog';
@@ -260,13 +307,13 @@ function setup(wm: WM) {
       const row = document.createElement('div');
       row.className = 'dlg-buttons';
       for (const b of buttons) {
-        const el = document.createElement('button');
-        el.className = b.primary ? 'btn default' : 'btn';
-        el.value = b.value;
-        el.textContent = b.label;
-        if (!b.primary) el.type = b.value === 'cancel' ? 'button' : 'submit';
-        if (b.value === 'cancel') el.addEventListener('click', () => d.close('cancel'));
-        row.append(el);
+        const bt = document.createElement('button');
+        bt.className = b.primary ? 'btn default' : 'btn';
+        bt.value = b.value;
+        bt.textContent = b.label;
+        if (!b.primary) bt.type = b.value === 'cancel' ? 'button' : 'submit';
+        if (b.value === 'cancel') bt.addEventListener('click', () => d.close('cancel'));
+        row.append(bt);
       }
       form.append(body, row);
       d.append(bar, form);
@@ -290,35 +337,21 @@ function setup(wm: WM) {
 
   /** "Save changes to untitled?" Resolves true when it is fine to go on. */
   async function askToSave() {
+    flush();
     if (!dirty) return true;
-    const { value } = await dialog(
-      'Paint',
-      el(`<p class="pt-ask">Save changes to ${escapeHtml(name)}?</p>`),
-      [
-        { label: 'Yes', value: 'yes', primary: true },
-        { label: 'No', value: 'no' },
-        { label: 'Cancel', value: 'cancel' },
-      ],
-    );
+    const { value } = await dialog('Paint', el(`<p class="pt-ask">Save changes to ${escapeHtml(name)}?</p>`), [
+      { label: 'Yes', value: 'yes', primary: true },
+      { label: 'No', value: 'no' },
+      { label: 'Cancel', value: 'cancel' },
+    ]);
     if (value === 'cancel') return false;
     if (value === 'yes') return save(false);
     return true;
   }
 
   // ── Files ────────────────────────────────────────────────────────
-  async function download(file: string, type: 'png' | 'bmp') {
-    const blob = type === 'bmp' ? encodeBmp(bm) : await new Promise<Blob | null>((r) => canvas.toBlob(r, 'image/png'));
-    if (!blob) return false;
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = file;
-    document.body.append(a);
-    a.click();
-    a.remove();
-    setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    return true;
-  }
   async function save(as: boolean): Promise<boolean> {
+    flush();
     let file = name;
     if (as || !named) {
       const base = name.replace(/\.(png|bmp|jpe?g|gif|webp|ico|avif|tiff?)$/i, '');
@@ -343,8 +376,9 @@ function setup(wm: WM) {
       const clean = typed.replace(/\.(png|bmp|jpe?g|gif|webp|ico|avif|tiff?)$/i, '') || 'untitled';
       file = `${clean.slice(0, 100)}.${type}`;
     }
-    const ok = await download(file, /\.bmp$/i.test(file) ? 'bmp' : 'png');
-    if (!ok) return false;
+    const blob = /\.bmp$/i.test(file) ? encodeBmp(bm) : await toPng(bm).catch(() => null);
+    if (!blob) return false;
+    download(file, blob);
     name = file;
     named = true;
     dirty = false;
@@ -365,33 +399,36 @@ function setup(wm: WM) {
   }
   async function openPicture() {
     if (!(await askToSave())) return;
-    fileInput.value = '';
-    fileInput.click();
-  }
-  fileInput.addEventListener('change', async () => {
-    const file = fileInput.files?.[0];
+    const file = await pickFile();
     if (!file) return;
     try {
       const pic = await createImageBitmap(file);
       const next = await bitmapFromSource(pic);
+      const fits = next.w === pic.width && next.h === pic.height;
       pic.close();
       adopt(next);
       undo.length = 0;
       redo.length = 0;
       name = file.name.replace(/[\u0000-\u001f]/g, '').slice(0, 120) || 'untitled';
       // Save goes through Save As unless the picture is a PNG/BMP kept at its size
-      named = /\.(png|bmp)$/i.test(name) && next.w === pic.width && next.h === pic.height;
+      named = /\.(png|bmp)$/i.test(name) && fits;
       dirty = false;
       title();
       autosave();
     } catch {
-      await dialog('Paint', el(`<p class="pt-ask">Paint cannot read this file. Try a PNG, JPEG, GIF, BMP or WebP picture.</p>`), [
-        { label: 'OK', value: 'ok', primary: true },
-      ]);
+      await cantRead();
     }
-  });
+  }
 
   // ── Image menu ───────────────────────────────────────────────────
+  /** flip, rotate, invert, stretch: act on the selection if there is one */
+  function transformPicture(fn: (b: R.Bitmap) => R.Bitmap) {
+    if (core.selection?.transform(fn)) return;
+    flush();
+    const next = fn(R.cloneBitmap(bm));
+    if (next.w === bm.w && next.h === bm.h) wholeOp(() => bm.data.set(next.data));
+    else replaceOp(next);
+  }
   async function flipRotate() {
     const { value, form } = await dialog(
       'Flip and Rotate',
@@ -410,11 +447,12 @@ function setup(wm: WM) {
     );
     if (value !== 'ok') return;
     const op = new FormData(form).get('op');
-    if (op === 'h') wholeOp(() => R.flipH(bm));
-    else if (op === 'v') wholeOp(() => R.flipV(bm));
-    else if (op === '90' || op === '180' || op === '270') replaceOp(R.rotate(bm, Number(op) as 90 | 180 | 270));
+    if (op === 'h') transformPicture((b) => (R.flipH(b), b));
+    else if (op === 'v') transformPicture((b) => (R.flipV(b), b));
+    else if (op === '90' || op === '180' || op === '270') transformPicture((b) => R.rotate(b, Number(op) as 90 | 180 | 270));
   }
   async function attributes() {
+    flush();
     const { value, form } = await dialog(
       'Attributes',
       el(
@@ -435,6 +473,7 @@ function setup(wm: WM) {
   }
   function resizeTo(w: number, h: number) {
     if (w === bm.w && h === bm.h) return;
+    flush();
     replaceOp(R.resizeCanvas(bm, w, h, st.bg));
   }
   async function about() {
@@ -448,22 +487,32 @@ function setup(wm: WM) {
   }
 
   // ── Tools and options ────────────────────────────────────────────
-  function setTool(t: ToolId) {
-    if (t !== 'pick') st.prevTool = t;
-    st.tool = t;
+  function setTool(id: ToolId) {
+    const next = tools.get(id);
+    if (!next || drag) return;
+    if (id !== toolId) {
+      const cur = tool();
+      cur?.flush?.();
+      cur?.deactivate?.();
+      // Pick Color and the Magnifier hand back to the tool used before them
+      if (toolId !== 'pick' && toolId !== 'magnifier') prevToolId = toolId;
+      toolId = id;
+    }
     for (const b of toolButtons) {
-      const on = b.dataset.tool === t;
+      const on = b.dataset.tool === id;
       b.setAttribute('aria-pressed', String(on));
       b.tabIndex = on ? 0 : -1;
     }
-    helpLine.textContent = HELP[t];
-    canvas.dataset.tool = t;
+    helpLine.textContent = next.help;
+    canvas.dataset.tool = id;
+    canvas.style.cursor = next.cursor ?? '';
     drawOptions();
+    next.activate?.();
   }
   toolButtons.forEach((b, i) => {
     b.addEventListener('click', () => setTool(b.dataset.tool as ToolId));
-    b.addEventListener('mouseenter', () => (helpLine.textContent = HELP[b.dataset.tool as ToolId]));
-    b.addEventListener('mouseleave', () => (helpLine.textContent = HELP[st.tool]));
+    b.addEventListener('mouseenter', () => (helpLine.textContent = tools.get(b.dataset.tool as ToolId)?.help ?? ''));
+    b.addEventListener('mouseleave', () => (helpLine.textContent = tool()?.help ?? ''));
     b.addEventListener('keydown', (e) => {
       const d = { ArrowDown: 2, ArrowUp: -2, ArrowRight: 1, ArrowLeft: -1 }[e.key];
       if (!d) return;
@@ -481,10 +530,19 @@ function setup(wm: WM) {
     const c = document.createElement('canvas');
     c.width = w;
     c.height = h;
-    c.getContext('2d')!.putImageData(new ImageData(new Uint8ClampedArray(b.data.buffer as ArrayBuffer), w, h), 0, 0);
+    c.getContext('2d')!.putImageData(imageOf(b), 0, 0);
     return c;
   }
-  function optionButtons(count: number, cols: number, w: number, h: number, current: number, label: (i: number) => string, draw: (i: number, b: R.Bitmap, ink: R.Color) => void, pick: (i: number) => void) {
+  function optionButtons(
+    count: number,
+    cols: number,
+    w: number,
+    h: number,
+    current: number,
+    label: (i: number) => string,
+    draw: (i: number, b: R.Bitmap, ink: R.Color) => void,
+    pick: (i: number) => void,
+  ) {
     const grid = document.createElement('div');
     grid.className = 'pt-optgrid';
     grid.style.gridTemplateColumns = `repeat(${cols}, ${w}px)`;
@@ -506,35 +564,7 @@ function setup(wm: WM) {
   }
   function drawOptions() {
     optionsBox.replaceChildren();
-    const t = st.tool;
-    if (t === 'eraser') {
-      optionsBox.append(
-        optionButtons(4, 1, 30, 13, st.eraser, (i) => `Eraser size ${ERASER_SIZES[i]}`, (i, b, ink) => R.stampAt(b, 15, 6, R.stamps.square(ERASER_SIZES[i]), ink), (i) => (st.eraser = i)),
-      );
-    } else if (t === 'brush') {
-      optionsBox.append(
-        optionButtons(12, 3, 11, 11, st.brush, (i) => `Brush ${i + 1}`, (i, b, ink) => R.stampAt(b, 5, 5, BRUSHES[i](), ink), (i) => (st.brush = i)),
-      );
-    } else if (t === 'airbrush') {
-      optionsBox.append(
-        optionButtons(3, 1, 30, 22, st.air, (i) => `Spray size ${AIR_RADII[i]}`, (i, b, ink) => {
-          let seed = 7;
-          R.spray(b, 15, 11, Math.min(10, AIR_RADII[i]), 10 + i * 8, ink, () => ((seed = (seed * 16807) % 2147483647) / 2147483647));
-        }, (i) => (st.air = i)),
-      );
-    } else if (t === 'line') {
-      optionsBox.append(
-        optionButtons(5, 1, 30, 9, st.line, (i) => `Line width ${LINE_WIDTHS[i]}`, (i, b, ink) => R.strokeLine(b, 4, 4, 25, 4, R.stamps.round(LINE_WIDTHS[i]), ink), (i) => (st.line = i)),
-      );
-    } else if (t === 'rect' || t === 'ellipse' || t === 'roundrect') {
-      const labels = ['Outline', 'Outline and fill', 'Fill only'];
-      optionsBox.append(
-        optionButtons(3, 1, 30, 16, st.fillStyle, (i) => labels[i], (i, b, ink) => {
-          const grey = R.rgb(128, 128, 128);
-          R.rect(b, 5, 3, 24, 12, 1, i === 2 ? null : ink, i === 0 ? null : grey);
-        }, (i) => (st.fillStyle = i)),
-      );
-    }
+    tool()?.options?.(optionsBox);
   }
 
   // ── Colours ──────────────────────────────────────────────────────
@@ -544,18 +574,18 @@ function setup(wm: WM) {
     fgBox.style.background = hex(st.fg);
     bgBox.style.background = hex(st.bg);
   }
-  win.querySelectorAll<HTMLButtonElement>('[data-color]').forEach((sw) => {
-    const color = parseHex(sw.dataset.color!);
+  const colorOf = (sw: HTMLElement) => parseHex(sw.dataset.color!);
+  for (const sw of swatches) {
     let longPress = 0;
     let usedLong = false;
     sw.addEventListener('click', () => {
       if (usedLong) return void (usedLong = false);
-      st.fg = color;
+      st.fg = colorOf(sw);
       showColors();
     });
     sw.addEventListener('contextmenu', (e) => {
       e.preventDefault();
-      st.bg = color;
+      st.bg = colorOf(sw);
       showColors();
     });
     // a finger has no right button: a long press picks the background color
@@ -564,29 +594,17 @@ function setup(wm: WM) {
       usedLong = false;
       longPress = window.setTimeout(() => {
         usedLong = true;
-        st.bg = color;
+        st.bg = colorOf(sw);
         showColors();
       }, 500);
     });
     for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) sw.addEventListener(ev, () => clearTimeout(longPress));
-  });
+  }
 
-  // ── Drawing on the canvas ────────────────────────────────────────
-  type Drag = {
-    id: number;
-    button: number;
-    x0: number;
-    y0: number;
-    x: number;
-    y: number;
-    ink: R.Color;
-    paper: R.Color;
-    preview: R.Box | null;
-    timer: number;
-  };
-  let drag: Drag | null = null;
+  // ── Pointer input on the picture ─────────────────────────────────
+  let drag: { id: number; button: 0 | 2 } | null = null;
 
-  const toPixel = (e: { clientX: number; clientY: number }) => {
+  const toPixel = (e: { clientX: number; clientY: number }): Pt => {
     // At fractional zoom (1.25) picture pixels cover 1 or 2 screen pixels; measure
     // from the centre of the pointer's screen pixel against the canvas edges as
     // they are actually drawn (snapped to device pixels).
@@ -595,56 +613,20 @@ function setup(wm: WM) {
     const snap = (v: number) => Math.round(v * dpr) / dpr;
     const L = snap(r.left);
     const T = snap(r.top);
-    return [
-      Math.floor(((e.clientX + 0.5 / dpr - L) * bm.w) / (snap(r.right) - L)),
-      Math.floor(((e.clientY + 0.5 / dpr - T) * bm.h) / (snap(r.bottom) - T)),
-    ] as const;
+    return {
+      x: Math.floor(((e.clientX + 0.5 / dpr - L) * bm.w) / (snap(r.right) - L)),
+      y: Math.floor(((e.clientY + 0.5 / dpr - T) * bm.h) / (snap(r.bottom) - T)),
+    };
   };
-  const shapeFn = { rect: R.rect, ellipse: R.ellipse, roundrect: R.roundRect } as const;
-
-  /** lines and shapes are redrawn from the starting picture on every move */
-  function drawShape(d: Drag, shift: boolean) {
-    if (!opBefore) return;
-    if (d.preview) R.restore(bm, d.preview, R.extract(opBefore, d.preview));
-    let { x, y } = d;
-    const width = LINE_WIDTHS[st.line];
-    if (st.tool === 'line') {
-      if (shift) [x, y] = R.constrainLine(d.x0, d.y0, x, y);
-      R.strokeLine(bm, d.x0, d.y0, x, y, R.stamps.round(width), d.ink);
-      const pad = width + 1;
-      d.preview = clip({ x0: Math.min(d.x0, x) - pad, y0: Math.min(d.y0, y) - pad, x1: Math.max(d.x0, x) + pad, y1: Math.max(d.y0, y) + pad });
-    } else {
-      if (shift) [x, y] = R.constrainSquare(d.x0, d.y0, x, y);
-      const fn = shapeFn[st.tool as keyof typeof shapeFn];
-      const [outline, fill] = st.fillStyle === 0 ? [d.ink, null] : st.fillStyle === 1 ? [d.ink, d.paper] : [null, d.ink];
-      fn(bm, d.x0, d.y0, x, y, width, outline, fill);
-      d.preview = clip({ x0: Math.min(d.x0, x), y0: Math.min(d.y0, y), x1: Math.max(d.x0, x), y1: Math.max(d.y0, y) });
-    }
-    sizeLine.textContent = `${Math.abs(x - d.x0) + 1}x${Math.abs(y - d.y0) + 1}`;
-    render();
-  }
-  const clip = (b: R.Box): R.Box | null => {
-    const c = { x0: Math.max(0, b.x0), y0: Math.max(0, b.y0), x1: Math.min(bm.w - 1, b.x1), y1: Math.min(bm.h - 1, b.y1) };
-    return c.x0 > c.x1 || c.y0 > c.y1 ? null : c;
-  };
-
-  function strokeTo(d: Drag, x: number, y: number) {
-    const t = st.tool;
-    if (t === 'pencil') R.strokeLine(bm, d.x, d.y, x, y, R.stamps.dot, d.ink);
-    else if (t === 'brush') R.strokeLine(bm, d.x, d.y, x, y, BRUSHES[st.brush](), d.ink);
-    else if (t === 'eraser') {
-      const stamp = R.stamps.square(ERASER_SIZES[st.eraser]);
-      if (d.button === 2) R.bresenham(d.x, d.y, x, y, (px, py) => R.replaceColor(bm, px, py, stamp, st.fg, st.bg));
-      else R.strokeLine(bm, d.x, d.y, x, y, stamp, st.bg);
-    }
-    d.x = x;
-    d.y = y;
-  }
-  function sprayOnce(d: Drag) {
-    const r = AIR_RADII[st.air];
-    R.spray(bm, d.x, d.y, r, Math.round(r * 1.6), d.ink, Math.random);
-    render();
-  }
+  const info = (p: Pt, e: PointerEvent, button: 0 | 2): PointerInfo => ({
+    p,
+    button,
+    shift: e.shiftKey,
+    ctrl: e.ctrlKey || e.metaKey,
+    ink: button === 2 ? st.bg : st.fg,
+    paper: button === 2 ? st.fg : st.bg,
+    e,
+  });
 
   canvas.addEventListener('contextmenu', (e) => e.preventDefault());
   // A right-button drag can end outside the picture; on Windows the browser then
@@ -667,99 +649,59 @@ function setup(wm: WM) {
   };
   const disarmMenuSwallow = () => {
     const t = swallowMenu;
-    if (t) window.setTimeout(() => {
-      if (swallowMenu === t) {
-        clearTimeout(t);
-        swallowMenu = 0;
-      }
-    }, 400);
+    if (t)
+      window.setTimeout(() => {
+        if (swallowMenu === t) {
+          clearTimeout(t);
+          swallowMenu = 0;
+        }
+      }, 400);
   };
+
   canvas.addEventListener('pointerdown', (e) => {
     if (drag) return;
-    const button = e.pointerType === 'mouse' ? e.button : 0;
-    if (button !== 0 && button !== 2) return;
+    const raw = e.pointerType === 'mouse' ? e.button : 0;
+    if (raw !== 0 && raw !== 2) return;
+    const button = raw as 0 | 2;
     e.preventDefault();
     canvas.focus({ preventScroll: true });
+    const p = toPixel(e);
+    if (!Number.isFinite(p.x) || !Number.isFinite(p.y)) return; // the canvas has no size right now
     canvas.setPointerCapture(e.pointerId);
-    const [x, y] = toPixel(e);
-    if (!Number.isFinite(x) || !Number.isFinite(y)) return; // the canvas has no size right now
     if (button === 2) armMenuSwallow();
-    const ink = button === 2 ? st.bg : st.fg;
-    const paper = button === 2 ? st.fg : st.bg;
-    const d: Drag = { id: e.pointerId, button, x0: x, y0: y, x, y, ink, paper, preview: null, timer: 0 };
-    const t = st.tool;
-    if (t === 'pick') {
-      pickAt(d, x, y);
-      drag = d;
-      return;
-    }
-    if (t === 'fill') {
-      beginOp();
-      R.floodFill(bm, x, y, ink);
-      endOp();
-      return;
-    }
-    drag = d;
-    beginOp();
-    if (t === 'airbrush') {
-      sprayOnce(d);
-      d.timer = window.setInterval(() => sprayOnce(d), 40);
-    } else if (t === 'line' || t === 'rect' || t === 'ellipse' || t === 'roundrect') drawShape(d, e.shiftKey);
-    else {
-      strokeTo(d, x, y);
-      render();
-    }
-  });
-  function pickAt(d: Drag, x: number, y: number) {
-    const c = R.getPixel(bm, x, y);
-    if (c === undefined) return;
-    if (d.button === 2) st.bg = c;
-    else st.fg = c;
-    showColors();
-  }
-  canvas.addEventListener('pointermove', (e) => {
-    const [x, y] = toPixel(e);
-    posLine.textContent = x >= 0 && y >= 0 && x < bm.w && y < bm.h ? `${x},${y}` : '';
-    const d = drag;
-    if (!d || e.pointerId !== d.id) return;
-    const t = st.tool;
-    if (t === 'pick') return pickAt(d, x, y);
-    if (t === 'airbrush') {
-      d.x = x;
-      d.y = y;
-      return;
-    }
-    if (t === 'line' || t === 'rect' || t === 'ellipse' || t === 'roundrect') {
-      d.x = x;
-      d.y = y;
-      return drawShape(d, e.shiftKey);
-    }
-    // every point the pointer passed, not just one per frame
-    const points = typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : [];
-    for (const p of points.length ? points : [e]) {
-      const [px, py] = toPixel(p);
-      strokeTo(d, px, py);
-    }
+    drag = { id: e.pointerId, button };
+    tool()?.down?.(info(p, e, button));
     render();
   });
-  function finish(e: PointerEvent, cancelled = false) {
+  canvas.addEventListener('pointermove', (e) => {
+    const p = toPixel(e);
+    posLine.textContent = p.x >= 0 && p.y >= 0 && p.x < bm.w && p.y < bm.h ? `${p.x},${p.y}` : '';
+    const t = tool();
+    if (!drag) {
+      t?.hover?.(p, e);
+      return;
+    }
+    if (e.pointerId !== drag.id) return;
+    // every point the pointer passed, not just one per frame
+    const points = typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : [];
+    for (const q of points.length ? points : [e]) t?.move?.(info(toPixel(q), q, drag.button));
+    render();
+  });
+  function finish(e: PointerEvent, cancelled: boolean) {
     const d = drag;
     if (!d || e.pointerId !== d.id) return;
     drag = null;
-    clearInterval(d.timer);
-    sizeLine.textContent = '';
     if (d.button === 2) disarmMenuSwallow();
-    if (st.tool === 'pick') {
-      if (!cancelled) setTool(st.prevTool);
-      return;
-    }
-    if (cancelled) cancelOp();
-    else endOp();
+    const t = tool();
+    if (cancelled) t?.cancel?.();
+    else t?.up?.(info(toPixel(e), e, d.button));
+    render();
   }
-  canvas.addEventListener('pointerup', (e) => finish(e));
+  canvas.addEventListener('pointerup', (e) => finish(e, false));
   canvas.addEventListener('pointercancel', (e) => finish(e, true));
+  canvas.addEventListener('lostpointercapture', (e) => drag && finish(e, true));
   canvas.addEventListener('pointerleave', () => (posLine.textContent = ''));
-  canvas.addEventListener('lostpointercapture', (e) => drag && finish(e));
+  canvas.addEventListener('dblclick', (e) => tool()?.dblclick?.(toPixel(e), e));
 
   // ── Resizing the picture by its handles ──────────────────────────
   win.querySelectorAll<HTMLElement>('[data-pt-handle]').forEach((handle) => {
@@ -767,6 +709,7 @@ function setup(wm: WM) {
     handle.addEventListener('pointerdown', (e) => {
       if (e.button !== 0 || drag) return;
       e.preventDefault();
+      flush();
       handle.setPointerCapture(e.pointerId);
       const dir = handle.dataset.ptHandle!;
       const r = canvas.getBoundingClientRect();
@@ -800,49 +743,153 @@ function setup(wm: WM) {
   });
 
   // ── Menus and keys ───────────────────────────────────────────────
+  const setChecked = (action: string, on: boolean) =>
+    win.querySelector(`[data-action="${action}"]`)?.setAttribute('aria-checked', String(on));
   const toggleView = (action: string, sel: string) => {
     const target = win.querySelector<HTMLElement>(sel)!;
     target.hidden = !target.hidden;
-    win.querySelector(`[data-action="${action}"]`)?.setAttribute('aria-checked', String(!target.hidden));
+    setChecked(action, !target.hidden);
   };
+  const onMenu = (action: string, fn: () => void) => void menus.set(action, fn);
+  onMenu('new', () => void newPicture());
+  onMenu('open', () => void openPicture());
+  onMenu('save', () => void save(false));
+  onMenu('saveas', () => void save(true));
+  onMenu('undo', () => step(undo, redo, true));
+  onMenu('redo', () => step(redo, undo, false));
+  onMenu('view-tools', () => toggleView('view-tools', '[data-pt-toolbox]'));
+  onMenu('view-colors', () => toggleView('view-colors', '[data-pt-colorbox]'));
+  onMenu('view-status', () => toggleView('view-status', '.pt-status'));
+  onMenu('fliprotate', () => void flipRotate());
+  onMenu('invert', () => transformPicture((b) => (R.invert(b), b)));
+  onMenu('attributes', () => void attributes());
+  onMenu('clear', () => {
+    flush();
+    wholeOp(() => R.rect(bm, 0, 0, bm.w - 1, bm.h - 1, 1, null, st.bg));
+  });
+  onMenu('about', () => void about());
+
   win.addEventListener('menu', (e) => {
     const a = (e as CustomEvent<string>).detail;
     if (drag) return;
     canvas.focus({ preventScroll: true }); // shortcuts keep working; dialogs take focus themselves
-    if (a === 'new') void newPicture();
-    else if (a === 'open') void openPicture();
-    else if (a === 'save') void save(false);
-    else if (a === 'saveas') void save(true);
-    else if (a === 'undo') step(undo, redo, true);
-    else if (a === 'redo') step(redo, undo, false);
-    else if (a === 'view-tools') toggleView(a, '[data-pt-toolbox]');
-    else if (a === 'view-colors') toggleView(a, '[data-pt-colorbox]');
-    else if (a === 'view-status') toggleView(a, '.pt-status');
-    else if (a === 'fliprotate') void flipRotate();
-    else if (a === 'invert') wholeOp(() => R.invert(bm));
-    else if (a === 'attributes') void attributes();
-    else if (a === 'clear') wholeOp(() => R.rect(bm, 0, 0, bm.w - 1, bm.h - 1, 1, null, st.bg));
-    else if (a === 'about') void about();
+    menus.get(a)?.();
   });
   win.addEventListener('keydown', (e) => {
-    if ((e.target as HTMLElement).matches('input, textarea, select')) return;
+    const target = e.target as HTMLElement;
+    const typing = target.matches('input, textarea, select, [contenteditable]');
     if (e.key === 'Escape' && drag) {
       e.preventDefault();
-      const d = drag;
       drag = null;
-      clearInterval(d.timer);
-      sizeLine.textContent = '';
-      if (st.tool !== 'pick') cancelOp();
+      tool()?.cancel?.();
+      render();
+      return;
+    }
+    if (!typing && tool()?.key?.(e)) {
+      e.preventDefault();
+      return;
+    }
+    if (typing) return;
+    if (e.key === 'Delete' && menus.has('clearsel')) {
+      e.preventDefault();
+      menus.get('clearsel')!();
       return;
     }
     if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
     const k = e.key.toLowerCase();
-    const map: Record<string, string> = { z: e.shiftKey ? 'redo' : 'undo', y: 'redo', s: 'save', o: 'open', i: 'invert' };
+    // Ctrl+V is left to the browser: the paste event carries the clipboard (tools/select.ts)
+    const map: Record<string, string> = { z: e.shiftKey ? 'redo' : 'undo', y: 'redo', s: 'save', o: 'open', i: 'invert', x: 'cut', c: 'copy', a: 'selectall' };
     const action = map[k];
-    if (!action) return;
+    if (!action || !menus.has(action)) return;
     e.preventDefault();
     win.dispatchEvent(new CustomEvent('menu', { detail: action }));
   });
+
+  // ── The Core every module is written against ─────────────────────
+  const core: Core = {
+    win,
+    canvas,
+    view,
+    overlay,
+    wm,
+    bm: () => bm,
+    render,
+    beginOp,
+    endOp,
+    cancelOp,
+    opBefore: () => opBefore,
+    wholeOp,
+    replaceOp,
+    flush,
+    st,
+    setFg(c) {
+      st.fg = c;
+      showColors();
+    },
+    setBg(c) {
+      st.bg = c;
+      showColors();
+    },
+    lineWidth: () => LINE_WIDTHS[st.line] ?? 1,
+    shapeColors: (ink, paper) => (st.fillStyle === 0 ? [ink, null] : st.fillStyle === 1 ? [ink, paper] : [null, ink]),
+    palette: {
+      get: () => swatches.map((s) => s.dataset.color!),
+      set(i, h) {
+        const sw = swatches[i];
+        if (!sw || !/^#[0-9a-f]{6}$/i.test(h)) return;
+        sw.dataset.color = h;
+        sw.style.setProperty('--c', h);
+        sw.setAttribute('aria-label', `Color ${h}`);
+      },
+    },
+    addTool: (t) => void tools.set(t.id, t),
+    setTool,
+    currentTool: () => toolId,
+    previousTool: () => prevToolId,
+    redrawOptions: drawOptions,
+    optionButtons,
+    selection: null,
+    zoom: () => zoomLevel,
+    setZoom(z, center) {
+      const next = Math.max(1, Math.min(8, Math.round(z)));
+      if (next === zoomLevel) return;
+      zoomLevel = next;
+      win.dataset.zoom = String(next);
+      layout();
+      if (center) {
+        view.scrollLeft = center.x * next - view.clientWidth / 2;
+        view.scrollTop = center.y * next - view.clientHeight / 2;
+      }
+    },
+    onLayout: (fn) => void layoutFns.push(fn),
+    toPixel,
+    place(elm, box) {
+      const z = zoomLevel;
+      elm.style.left = `${box.x0 * z}px`;
+      elm.style.top = `${box.y0 * z}px`;
+      elm.style.width = `${(box.x1 - box.x0 + 1) * z}px`;
+      elm.style.height = `${(box.y1 - box.y0 + 1) * z}px`;
+    },
+    onMenu,
+    setChecked,
+    status: { help: (t) => (helpLine.textContent = t), size: (t) => (sizeLine.textContent = t) },
+    dialog,
+    el,
+    escapeHtml,
+    pickImage,
+    bitmapFromSource,
+    toPng,
+    download,
+  };
+
+  installBasic(core);
+  for (const [path, mod] of Object.entries(MODULES)) {
+    try {
+      mod.install(core);
+    } catch (err) {
+      console.error(`Paint: ${path} failed to install`, err);
+    }
+  }
 
   // ── Opening and closing ──────────────────────────────────────────
   wm.hook('paint', {
@@ -874,10 +921,11 @@ function setup(wm: WM) {
   setTool('pencil');
   showColors();
   title();
+  layout();
   void (async () => {
     if (await restoreAutosave()) return;
-    // a first picture that fits the window
-    // leave room for the padding and the resize handles, so no scroll bars appear
+    // a first picture that fits the window, leaving room for the padding and
+    // the resize handles so no scroll bars appear
     const w = Math.max(64, Math.min(640, view.clientWidth - 22));
     const h = Math.max(64, Math.min(480, view.clientHeight - 22));
     adopt(R.createBitmap(w, h, WHITE));
