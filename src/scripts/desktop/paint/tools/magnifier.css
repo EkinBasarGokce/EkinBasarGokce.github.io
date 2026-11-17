@@ -1,0 +1,72 @@
+/* Paint: the Magnifier and View > Zoom (tools/magnifier.ts) */
+
+/* at 1x, the part of the picture a click will zoom in on, inverted as in 98 */
+.pt-mag-rect {
+  position: absolute;
+  box-sizing: border-box;
+  border: 1px solid #fff;
+  mix-blend-mode: difference;
+  pointer-events: none;
+}
+
+/* the zoom, under the 1x / 2x / 6x / 8x buttons */
+.pt-mag-now {
+  margin: 0;
+  padding-top: 2px;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* Show Grid: a one-device-pixel line along the left and top of every pixel */
+.pt-grid {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  overflow: hidden;
+  pointer-events: none;
+}
+.pt-grid path {
+  fill: var(--shadow);
+}
+
+/* Custom Zoom */
+.pt-mag-current {
+  padding: 4px 4px 2px;
+}
+.pt-mag-zoomto {
+  grid-template-columns: repeat(3, max-content);
+  gap: 8px 22px;
+  margin-bottom: 6px;
+}
+
+/* View Bitmap: the picture at actual size, top left, on the desktop colour */
+dialog.pt-viewbitmap {
+  position: fixed;
+  inset: 0;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: auto;
+  background: var(--desk);
+  cursor: default;
+  outline: none;
+}
+dialog.pt-viewbitmap::backdrop {
+  background: var(--desk);
+}
+dialog.pt-viewbitmap canvas {
+  display: block;
+  image-rendering: pixelated;
+}
+
+/* a finger gets taller targets; the drawn labels stay the same */
+@media (pointer: coarse) {
+  .pt-mag-opts .pt-opt {
+    padding: 3px 0;
+  }
+}
