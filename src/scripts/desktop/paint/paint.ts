@@ -903,7 +903,8 @@ function setup(wm: WM) {
       return ok;
     },
     onClose: () => {
-      // a fresh picture next time, as in 98
+      // a fresh picture next time, as in 98, at normal size
+      core.setZoom(1);
       adopt(R.createBitmap(bm.w, bm.h, WHITE));
       undo.length = 0;
       redo.length = 0;

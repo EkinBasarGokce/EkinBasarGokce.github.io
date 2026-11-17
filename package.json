@@ -9,7 +9,7 @@
     "preview": "astro preview",
     "check": "astro check",
     "todo": "node tools/todo.mjs",
-    "test": "node --test src/scripts/desktop/paint/raster.test.ts"
+    "test": "node --test src/scripts/desktop/paint/raster.test.ts src/scripts/desktop/paint/tools/select.test.ts src/scripts/desktop/paint/tools/polyfill.test.ts"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.12",

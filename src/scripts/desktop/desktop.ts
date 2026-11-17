@@ -4,8 +4,10 @@
  * right-click menu, the Start menu and the clock in the corner of the taskbar.
  */
 import { type WM, zoom, px, clamp } from './wm';
+import { applySavedWallpaper, resetWallpaper, hasCustomWallpaper } from './wallpaper';
 
 export function initDesktop(wm: WM) {
+  void applySavedWallpaper(); // a picture the visitor set from Paint (File > Set As Wallpaper)
   icons(wm);
   startMenu(wm);
   clock(wm);
@@ -262,6 +264,7 @@ function icons(wm: WM) {
     if (!isBackground(e.target as HTMLElement)) return; // icons and windows keep the browser's own menu
     e.preventDefault();
     const z = zoom();
+    menu.querySelector('[data-action="wallpaper"]')?.setAttribute('aria-disabled', String(!hasCustomWallpaper()));
     menu.showPopover();
     menu.style.left = px(Math.max(0, Math.min(e.clientX / z, innerWidth / z - menu.offsetWidth - 2)));
     menu.style.top = px(Math.max(0, Math.min(e.clientY / z, innerHeight / z - menu.offsetHeight - 2)));
@@ -274,6 +277,7 @@ function icons(wm: WM) {
       save(null);
       layout();
     } else if (action === 'refresh') location.reload();
+    else if (action === 'wallpaper') resetWallpaper();
   });
 }
 

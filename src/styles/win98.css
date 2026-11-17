@@ -1353,7 +1353,7 @@ dialog.win::backdrop {
   position: relative;
   width: max-content;
 }
-.pt-paper canvas {
+.pt-paper [data-pt-canvas] {
   display: block;
   background: #fff;
   image-rendering: pixelated;
@@ -1361,11 +1361,11 @@ dialog.win::backdrop {
   cursor: crosshair;
   user-select: none;
 }
-.pt-paper canvas[data-tool='fill'],
-.pt-paper canvas[data-tool='pick'] {
+.pt-paper [data-pt-canvas][data-tool='fill'],
+.pt-paper [data-pt-canvas][data-tool='pick'] {
   cursor: cell;
 }
-.pt-paper canvas:focus-visible {
+.pt-paper [data-pt-canvas]:focus-visible {
   outline: 1px dotted var(--hilite);
   outline-offset: 1px;
 }

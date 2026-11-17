@@ -85,7 +85,11 @@ const hasWinamp = icons.some((i) => i.data.app === 'winamp');
 
 <!-- right-click on the empty desktop -->
 <div id="desk-menu" class="ctx-menu" popover>
-  <MenuList entries={[{ label: 'Arrange &Icons', action: 'arrange' }, 'sep', { label: 'R&efresh', action: 'refresh' }]} class="ctx-list" label="Desktop" />
+  <MenuList
+    entries={[{ label: 'Arrange &Icons', action: 'arrange' }, 'sep', { label: 'Restore Default &Wallpaper', action: 'wallpaper' }, { label: 'R&efresh', action: 'refresh' }]}
+    class="ctx-list"
+    label="Desktop"
+  />
 </div>
 
 <!-- a selected icon is tinted navy, like the real thing -->
