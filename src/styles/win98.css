@@ -1378,13 +1378,13 @@ dialog.win::backdrop {
   outline-offset: 1px;
 }
 /* overlay stacking: floating pixels, then the grid, then marquees and the text box */
-.pt-paper .pt-overlay .pt-sel-float {
+.pt-paper .pt-overlay :is(.pt-sel-float, .pt-textshown) {
   z-index: 1;
 }
 .pt-paper .pt-overlay .pt-grid {
   z-index: 2;
 }
-.pt-paper .pt-overlay :is(.pt-sel-ants, .pt-mag-rect, .pt-textframe, .pt-textshown, .pt-textflow, .pt-textband, .pt-textedge, .pt-texthandle) {
+.pt-paper .pt-overlay :is(.pt-sel-ants, .pt-mag-rect, .pt-textframe, .pt-textband) {
   z-index: 3;
 }
 /* a layer over the picture for marquees, floating selections and text (core.overlay) */
