@@ -351,6 +351,14 @@ export function install(core: Core) {
       t.scrollLeft = 0;
     });
     for (const ev of ['select', 'keyup', 'pointerup', 'focus']) t.addEventListener(ev, syncEditMenu);
+    // a press on a plain part of the window (status bar, grey area, borders)
+    // must not take the caret out of the box, as in 98
+    const keepCaret = (e: PointerEvent) => {
+      if (!ta || e.pointerType !== 'mouse') return;
+      const target = e.target as HTMLElement;
+      if (!target.closest('button, input, select, textarea, a, canvas, [contenteditable], .pt-overlay, .pt-fontbar, .title, .rz')) e.preventDefault();
+    };
+    core.win.addEventListener('pointerdown', keepCaret);
     t.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !e.isComposing) {
         e.preventDefault();

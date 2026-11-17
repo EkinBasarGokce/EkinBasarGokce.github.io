@@ -131,6 +131,8 @@ export interface Core {
   replaceOp(next: R.Bitmap): void;
   /** commit whatever the current tool holds (see Tool.flush) */
   flush(): void;
+  /** the current tool holds something not yet in the picture (Tool.busy) */
+  busy(): boolean;
 
   // ── colours and options ──
   readonly st: {

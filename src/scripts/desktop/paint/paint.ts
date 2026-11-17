@@ -507,6 +507,7 @@ function setup(wm: WM) {
   function setTool(id: ToolId) {
     const next = tools.get(id);
     if (!next || drag) return;
+    if (id === toolId && next.busy?.()) return; // re-choosing a tool mid-shape changes nothing
     if (id !== toolId) {
       const cur = tool();
       cur?.flush?.();
@@ -526,6 +527,11 @@ function setup(wm: WM) {
     drawOptions();
     next.activate?.();
   }
+  // As in 98, clicking a tool, an option or a colour leaves the keyboard on the
+  // picture (Esc / Enter still reach a shape in progress); Tab still reaches them.
+  win.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' && (e.target as HTMLElement).closest('.pt-tool, .pt-opt, .pt-swatch')) e.preventDefault();
+  });
   toolButtons.forEach((b, i) => {
     b.addEventListener('click', () => setTool(b.dataset.tool as ToolId));
     b.addEventListener('mouseenter', () => (helpLine.textContent = tools.get(b.dataset.tool as ToolId)?.help ?? ''));
@@ -859,6 +865,7 @@ function setup(wm: WM) {
     wholeOp,
     replaceOp,
     flush,
+    busy: () => !!tool()?.busy?.(),
     st,
     setFg(c) {
       st.fg = c;

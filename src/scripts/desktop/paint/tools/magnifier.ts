@@ -71,6 +71,13 @@ export function install(core: Core) {
   /** the picture pixel in the middle of the part of the picture in view */
   function viewCentre(): Pt {
     const bm = core.bm();
+    // typing in a text box: zoom around the box, so it stays in view
+    const frame = core.overlay.querySelector<HTMLElement>('.pt-textframe');
+    if (frame && frame.getClientRects().length && core.overlay.contains(document.activeElement)) {
+      const r = frame.getBoundingClientRect();
+      const p = core.toPixel({ clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 });
+      return { x: clamp(p.x, 0, bm.w - 1), y: clamp(p.y, 0, bm.h - 1) };
+    }
     const z = core.zoom();
     const W = canvas.offsetWidth;
     const H = canvas.offsetHeight;
@@ -236,7 +243,7 @@ export function install(core: Core) {
   let viewing: HTMLDialogElement | null = null;
   function viewBitmap() {
     if (viewing) return;
-    core.flush(); // a floating selection or text being typed belongs in the picture first
+    if (core.busy()) core.flush(); // floating pixels or typed text belong in the picture first
     const bm = core.bm();
     const d = document.createElement('dialog');
     d.className = 'pt-viewbitmap';

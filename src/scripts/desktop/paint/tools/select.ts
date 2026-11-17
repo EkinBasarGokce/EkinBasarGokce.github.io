@@ -262,6 +262,8 @@ export function install(core: Core) {
   let writing = false;
   /** which copy the running write belongs to (a newer copy overrides an older write) */
   let writeId = 0;
+  let newestDone = false; // the newest write has settled
+  let lastFailed = false; // the newest write failed or was never possible
   let shownBg: R.Color | null = null;
   let lastBm = core.bm();
 
@@ -644,17 +646,28 @@ export function install(core: Core) {
     const id = ++writeId;
     sysStale = true;
     writing = false;
+    newestDone = false;
+    lastFailed = true; // until this write succeeds
     try {
       if (typeof ClipboardItem === 'function' && navigator.clipboard?.write) {
         writing = true;
         navigator.clipboard.write([new ClipboardItem({ 'image/png': core.toPng(img) })]).then(
           () => {
-            if (id !== writeId) return;
+            if (id !== writeId) {
+              // an older, slower write landed after the newest one: the
+              // system clipboard now holds the older image
+              if (newestDone) sysStale = true;
+              return;
+            }
             writing = false;
+            newestDone = true;
+            lastFailed = false;
             sysStale = false;
           },
           () => {
-            if (id === writeId) writing = false;
+            if (id !== writeId) return;
+            writing = false;
+            newestDone = true;
           },
         );
       }
@@ -669,7 +682,8 @@ export function install(core: Core) {
   // possible): something may have been copied elsewhere since, so the system
   // clipboard is the newer one again.
   window.addEventListener('focus', () => {
-    if (!writing) sysStale = false;
+    // only after a write that worked: if Paint could not write, its own copy stays the one to paste
+    if (!writing && !lastFailed) sysStale = false;
   });
   /** an image file or blob to a floating bitmap (scaled to fit MAX_SIDE), or null */
   async function decode(blob: Blob): Promise<R.Bitmap | null> {

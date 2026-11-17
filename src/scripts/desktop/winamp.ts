@@ -134,6 +134,9 @@ export function initWinamp(wm: WM) {
   }
 
   function teardown() {
+    // Webamp removes #webamp from the parent it created it in: put it back there first
+    const el = root();
+    if (el && el.parentElement !== document.body) document.body.append(el);
     try {
       webamp?.dispose();
     } catch {}

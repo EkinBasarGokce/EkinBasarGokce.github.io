@@ -62,8 +62,10 @@ export class WM {
       const el = this.wins.get(id)!;
       if (this.activeId === id && !el.hasAttribute('data-min')) this.minimize(id);
       else {
+        const wasMin = el.hasAttribute('data-min');
         el.removeAttribute('data-min');
         this.keepInside();
+        if (wasMin && this.compact.matches && history.state?.win !== id) history.pushState({ win: id }, '', `#${id}`);
         this.focus(id, true);
       }
     });
@@ -202,6 +204,8 @@ export class WM {
   minimize(id: string) {
     const el = this.wins.get(id)!;
     const hadFocus = el.contains(document.activeElement);
+    // on a phone its Back entry goes with it, so Back never does nothing
+    if (history.state?.win === id) this.backSilently();
     el.setAttribute('data-min', '');
     el.removeAttribute('data-active');
     const next = this.top();

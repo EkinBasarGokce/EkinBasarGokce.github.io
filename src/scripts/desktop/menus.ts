@@ -80,6 +80,27 @@ export function initMenus() {
     if (action) mi.dispatchEvent(new CustomEvent('menu', { detail: action, bubbles: true }));
   });
 
+  // A menu opened with the mouse leaves focus where it was (a text box, the
+  // picture): Esc still closes it and the arrows step into it, before anything
+  // else sees those keys.
+  document.addEventListener(
+    'keydown',
+    (e) => {
+      if (!open || open.contains(e.target as Node)) return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        close();
+      } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        e.stopPropagation();
+        const items = itemsOf(open.querySelector(':scope > .menu')!);
+        (e.key === 'ArrowDown' ? items[0] : items.at(-1))?.focus();
+      }
+    },
+    true,
+  );
+
   document.addEventListener('keydown', (e) => {
     const t = e.target as HTMLElement;
 

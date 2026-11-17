@@ -260,16 +260,39 @@ function icons(wm: WM) {
   // ── Right-click on the empty desktop ─────────────────────────────
   const menu = document.getElementById('desk-menu');
   if (!menu) return;
-  wm.desk.addEventListener('contextmenu', (e) => {
-    if (!isBackground(e.target as HTMLElement)) return; // icons and windows keep the browser's own menu
-    e.preventDefault();
+  const openMenuAt = (clientX: number, clientY: number, focus: boolean) => {
     const z = zoom();
     menu.querySelector('[data-action="wallpaper"]')?.setAttribute('aria-disabled', String(!hasCustomWallpaper()));
     menu.showPopover();
-    menu.style.left = px(Math.max(0, Math.min(e.clientX / z, innerWidth / z - menu.offsetWidth - 2)));
-    menu.style.top = px(Math.max(0, Math.min(e.clientY / z, innerHeight / z - menu.offsetHeight - 2)));
-    menu.querySelector<HTMLElement>('.mi')?.focus({ preventScroll: true }); // arrows, Enter and Esc work at once
+    menu.style.left = px(Math.max(0, Math.min(clientX / z, innerWidth / z - menu.offsetWidth - 2)));
+    menu.style.top = px(Math.max(0, Math.min(clientY / z, innerHeight / z - menu.offsetHeight - 2)));
+    if (focus) menu.querySelector<HTMLElement>('.mi')?.focus({ preventScroll: true }); // arrows, Enter and Esc work at once
+  };
+  wm.desk.addEventListener('contextmenu', (e) => {
+    if (!isBackground(e.target as HTMLElement)) return; // icons and windows keep the browser's own menu
+    e.preventDefault();
+    if (!menu.matches(':popover-open')) openMenuAt(e.clientX, e.clientY, true);
   });
+  // touch screens that send no contextmenu on a long press (iPhone): hold a finger still
+  let hold = 0;
+  let holdAt: [number, number] = [0, 0];
+  const cancelHold = () => {
+    clearTimeout(hold);
+    hold = 0;
+  };
+  wm.desk.addEventListener('pointerdown', (e) => {
+    if (e.pointerType === 'mouse' || !isBackground(e.target as HTMLElement)) return;
+    holdAt = [e.clientX, e.clientY];
+    cancelHold();
+    hold = window.setTimeout(() => {
+      hold = 0;
+      openMenuAt(holdAt[0], holdAt[1], false);
+    }, 600);
+  });
+  wm.desk.addEventListener('pointermove', (e) => {
+    if (hold && Math.hypot(e.clientX - holdAt[0], e.clientY - holdAt[1]) > 10) cancelHold();
+  });
+  for (const ev of ['pointerup', 'pointercancel'] as const) wm.desk.addEventListener(ev, cancelHold);
   menu.addEventListener('menu', (e) => {
     const action = (e as CustomEvent<string>).detail;
     if (action === 'arrange') {

@@ -30,9 +30,13 @@ function notepad() {
   const win = document.getElementById('about');
   const ta = win?.querySelector('textarea');
   if (!win || !ta) return;
+  // through the browser's editing commands, so Edit > Undo and Ctrl+Z can take it back
   const insert = (text: string) => {
     ta.focus();
-    ta.setRangeText(text, ta.selectionStart, ta.selectionEnd, 'end');
+    const done = text
+      ? document.execCommand('insertText', false, text)
+      : ta.selectionStart === ta.selectionEnd || document.execCommand('delete');
+    if (!done) ta.setRangeText(text, ta.selectionStart, ta.selectionEnd, 'end');
   };
   // "3:41 PM 11/17/2026", in the visitor's own format, as Notepad's F5 does
   const stamp = () => {
@@ -147,7 +151,6 @@ function media(wm: WM) {
     frame.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(o.dataset.id!)}?autoplay=1&playsinline=1&rel=0`;
     frame.title = o.dataset.title ?? 'Video';
     frame.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
-    frame.allowFullscreen = true;
     poster.hidden = true;
     big.hidden = true;
     screen.append(frame);

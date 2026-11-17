@@ -639,7 +639,7 @@ dialog.win::backdrop {
   padding: 1px 0 2px;
   user-select: none;
   position: relative;
-  z-index: 3;
+  z-index: 30; /* open menus above anything inside the window (Paint's Fonts bar, its picture) */
 }
 .mb {
   position: relative;
@@ -1360,6 +1360,7 @@ dialog.win::backdrop {
 .pt-paper {
   position: relative;
   width: max-content;
+  isolation: isolate; /* its overlay layers stack among themselves, under the menus */
 }
 .pt-paper [data-pt-canvas] {
   display: block;
