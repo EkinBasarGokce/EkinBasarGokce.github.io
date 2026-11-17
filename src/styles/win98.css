@@ -60,6 +60,23 @@
   }
 }
 
+/*
+ * Bigger by default, as if the browser were zoomed to 150%, on computers with
+ * room for it (a bit less on smaller screens). Touch screens get their own
+ * larger controls above instead. Scripts read the zoom back to turn pointer
+ * movement into page pixels (see zoom() in scripts/desktop/wm.ts).
+ */
+@media (pointer: fine) and (min-width: 760px) and (min-height: 520px) {
+  body {
+    zoom: 1.25;
+  }
+}
+@media (pointer: fine) and (min-width: 1000px) and (min-height: 640px) {
+  body {
+    zoom: 1.5;
+  }
+}
+
 /* ── Base ─────────────────────────────────────────────────────── */
 html,
 body {
@@ -723,6 +740,19 @@ dialog.win::backdrop {
   background: var(--desk) center / auto;
 }
 
+/* the photo fills the desktop; teal shows while it loads */
+.wallpaper {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.wallpaper img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 45%;
+}
+
 .icons {
   position: absolute;
   inset: 2px auto 2px 2px;
@@ -755,9 +785,29 @@ dialog.win::backdrop {
   text-align: center;
   line-height: 1.15;
   overflow-wrap: anywhere;
+  /* readable on the photo */
+  text-shadow: 1px 1px 1px rgb(0 0 0 / 0.85), 0 0 3px rgb(0 0 0 / 0.5);
 }
 .icon[data-selected] span {
   background: var(--sel);
+  text-shadow: none;
+}
+/* once the script has placed them, icons sit where the visitor left them */
+.icons.free {
+  inset: 0;
+  display: block;
+}
+.icons.free > li {
+  position: absolute;
+  width: var(--cell);
+}
+.icons > li.dragging {
+  z-index: 1;
+  opacity: 0.7;
+}
+.icon {
+  touch-action: none;
+  -webkit-user-drag: none;
 }
 .icon[data-selected] img {
   filter: url(#selected);
@@ -921,6 +971,21 @@ dialog.win::backdrop {
 .sm-list > .mi-li > .menu {
   top: auto;
   bottom: -3px;
+}
+
+/* ── Desktop right-click menu ─────────────────────────────────── */
+.ctx-menu {
+  position: fixed;
+  inset: auto;
+  margin: 0;
+  padding: 2px;
+  border: 0;
+  min-width: 150px;
+  background: var(--face);
+  box-shadow: var(--raised);
+  color: var(--ink);
+  font: inherit;
+  overflow: visible;
 }
 
 /* ── After Shut Down ──────────────────────────────────────────── */

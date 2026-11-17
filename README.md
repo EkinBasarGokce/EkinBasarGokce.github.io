@@ -80,6 +80,10 @@ Create `src/content/strands/<id>.md` with `title`, `kicker`, `hue`, `order`, and
 - **Add an app:** make a component in `src/components/desktop/apps/` that renders a `<Window id="...">`. Render it in `Desktop.astro` and add its id to `APPS`. Then point an icon at it with `app: <id>`. Its behaviour goes in `src/scripts/desktop/apps.ts`.
 - **Add an icon drawing:** add a 16×16 text grid to `src/lib/pixel.ts`, one character per pixel.
 
+Visitors can drag icons anywhere. Their arrangement is kept in their own browser, and right-click > Arrange Icons resets it. On computers the page is shown at 150% (125% on smaller screens), like zooming the browser.
+
+The wallpaper (`src/assets/desktop/wallpaper.jpg`) is a photo by Se. Tsuchiya on Unsplash (https://unsplash.com/photos/SVVKbAy5CDc), used under the Unsplash License. To change it, replace that file.
+
 The window manager (`src/scripts/desktop/wm.ts`) handles opening, dragging, resizing, minimising, the taskbar, and Back on phones. `/desktop/#mail` opens with Mail already open.
 
 ## Deploying

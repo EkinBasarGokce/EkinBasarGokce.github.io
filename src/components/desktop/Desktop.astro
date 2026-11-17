@@ -1,16 +1,23 @@
 ---
 /**
- * The Desktop page: icons from src/content/desktop.yaml on a teal desktop,
+ * The Desktop page: icons from src/content/desktop.yaml on a green-hill wallpaper,
  * the app windows, the taskbar and the Start menu.
+ *
+ * Visitors can drag the icons around; where they leave them is remembered in
+ * their browser, and right-click > Arrange Icons puts them back.
  *
  * Add a link icon: one entry in desktop.yaml.
  * Add an app: a component in ./apps/ (a <Window id="...">), render it below,
  * add its id to APPS, then point an icon at it with `app: id`.
  */
 import { getCollection } from 'astro:content';
+import { Picture } from 'astro:assets';
 import { iconUri } from '../../lib/pixel';
+// Wallpaper: photo by Se. Tsuchiya on Unsplash (Unsplash License), unsplash.com/photos/SVVKbAy5CDc
+import wallpaper from '../../assets/desktop/wallpaper.jpg';
 import Taskbar from './Taskbar.astro';
 import StartMenu from './StartMenu.astro';
+import MenuList from './MenuList.astro';
 import About from './apps/About.astro';
 import Mail from './apps/Mail.astro';
 import MediaPlayer from './apps/MediaPlayer.astro';
@@ -30,20 +37,24 @@ for (const i of icons) {
 
 <div class="screen">
   <main class="desktop" data-desktop>
+    <div class="wallpaper" aria-hidden="true">
+      <Picture src={wallpaper} alt="" formats={['avif', 'webp']} widths={[960, 1440, 1920, 2560, 3000]} sizes="100vw" loading="eager" fetchpriority="high" />
+    </div>
     <h1 class="sr-only">Desktop</h1>
     <ul class="icons" role="list" aria-label="Desktop icons">
       {
-        icons.map(({ data: d }) => (
+        icons.map(({ id, data: d }) => (
           <li>
             <a
               class="icon"
               href={d.app ? `#${d.app}` : d.href}
               target={d.newTab ? '_blank' : undefined}
               rel={d.newTab ? 'noopener' : undefined}
-              data-icon
+              draggable="false"
+              data-icon={id}
               data-open={d.app}
             >
-              <img src={iconUri(d.icon, { shortcut: !!d.href })} width="32" height="32" alt="" />
+              <img src={iconUri(d.icon, { shortcut: !!d.href })} width="32" height="32" alt="" draggable="false" />
               <span>{d.label}</span>
             </a>
           </li>
@@ -62,6 +73,11 @@ for (const i of icons) {
 
 <StartMenu />
 <ShutDown />
+
+<!-- right-click on the empty desktop -->
+<div id="desk-menu" class="ctx-menu" popover>
+  <MenuList entries={[{ label: 'Arrange &Icons', action: 'arrange' }, 'sep', { label: 'R&efresh', action: 'refresh' }]} class="ctx-list" label="Desktop" />
+</div>
 
 <!-- a selected icon is tinted navy, like the real thing -->
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">

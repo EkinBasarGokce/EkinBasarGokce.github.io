@@ -13,8 +13,15 @@ type Hooks = {
   beforeClose?: () => boolean | Promise<boolean>;
 };
 
-const px = (n: number) => `${Math.round(n)}px`;
-const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
+export const px = (n: number) => `${Math.round(n)}px`;
+export const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
+
+/**
+ * The page zoom set in win98.css (1, 1.25 or 1.5). Pointer events report
+ * screen pixels; positions are set in page pixels, so pointer movement is
+ * divided by this.
+ */
+export const zoom = () => parseFloat(getComputedStyle(document.body).zoom) || 1;
 
 export class WM {
   readonly desk: HTMLElement;
@@ -334,10 +341,11 @@ export class WM {
       const W = this.desk.clientWidth;
       const H = this.desk.clientHeight;
       const w = el.offsetWidth;
+      const z = zoom();
       title.setPointerCapture(e.pointerId);
       const move = (m: PointerEvent) => {
-        el.style.left = px(clamp(ox + m.clientX - sx, 40 - w, W - 40));
-        el.style.top = px(clamp(oy + m.clientY - sy, 0, H - 24));
+        el.style.left = px(clamp(ox + (m.clientX - sx) / z, 40 - w, W - 40));
+        el.style.top = px(clamp(oy + (m.clientY - sy) / z, 0, H - 24));
       };
       const end = () => {
         title.removeEventListener('pointermove', move);
@@ -365,10 +373,11 @@ export class WM {
     const minH = Number(el.dataset.minh ?? 140);
     const W = this.desk.clientWidth;
     const H = this.desk.clientHeight;
+    const z = zoom();
     handle.setPointerCapture(e.pointerId);
     const move = (m: PointerEvent) => {
-      const dx = m.clientX - sx;
-      const dy = m.clientY - sy;
+      const dx = (m.clientX - sx) / z;
+      const dy = (m.clientY - sy) / z;
       let { x, y, w, h } = r;
       if (dir.includes('e')) w = clamp(r.w + dx, minW, W - r.x);
       if (dir.includes('s')) h = clamp(r.h + dy, minH, H - r.y);

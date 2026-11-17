@@ -1,9 +1,9 @@
 /**
  * The desktop itself: icons (select on press, open on double-click, or on a
- * single tap with a finger or Enter on the keyboard), the Start menu and the
- * clock in the corner of the taskbar.
+ * single tap with a finger or Enter on the keyboard; drag them anywhere), the
+ * right-click menu, the Start menu and the clock in the corner of the taskbar.
  */
-import type { WM } from './wm';
+import { type WM, zoom, px, clamp } from './wm';
 
 export function initDesktop(wm: WM) {
   icons(wm);
@@ -11,9 +11,17 @@ export function initDesktop(wm: WM) {
   clock(wm);
 }
 
+/** a place on the desktop's invisible grid: [column, row] */
+type Cell = [number, number];
+const cellKey = (c: Cell) => `${c[0]},${c[1]}`;
+
 function icons(wm: WM) {
-  const all = [...document.querySelectorAll<HTMLAnchorElement>('[data-icon]')];
+  const list = document.querySelector<HTMLElement>('.icons')!;
+  const all = [...list.querySelectorAll<HTMLAnchorElement>('[data-icon]')];
+  const item = (a: HTMLElement) => a.parentElement as HTMLElement;
   let pointer = 'mouse';
+  let justDragged = false;
+
   const select = (a: HTMLElement | null) => all.forEach((i) => i.toggleAttribute('data-selected', i === a));
   const activate = (a: HTMLAnchorElement) => {
     if (a.dataset.open) wm.open(a.dataset.open, a);
@@ -21,13 +29,175 @@ function icons(wm: WM) {
     else location.href = a.href;
   };
 
+  // ── Where the icons sit ──────────────────────────────────────────
+  // Icons snap to an invisible grid: down the left in columns on a computer,
+  // in rows on a phone (the same layout the CSS grid shows before this runs).
+  // A visitor's arrangement is kept in their browser, one per layout.
+  const narrow = () => wm.compact.matches;
+  const storeKey = () => `desktop-icons:${narrow() ? 'narrow' : 'wide'}`;
+  const load = (): Record<string, Cell> => {
+    try {
+      const v = JSON.parse(localStorage.getItem(storeKey()) ?? '{}');
+      return v && typeof v === 'object' ? v : {};
+    } catch {
+      return {};
+    }
+  };
+  const save = (v: Record<string, Cell> | null) => {
+    try {
+      if (v) localStorage.setItem(storeKey(), JSON.stringify(v));
+      else localStorage.removeItem(storeKey());
+    } catch {
+      // storage blocked: the arrangement lasts until the page closes
+    }
+  };
+  const grid = () => {
+    const cell = parseFloat(getComputedStyle(list).getPropertyValue('--cell')) || 75;
+    const [x0, y0] = narrow() ? [4, 6] : [2, 2];
+    return {
+      cell,
+      x0,
+      y0,
+      cols: Math.max(1, Math.floor((wm.desk.clientWidth - 2 * x0) / cell)),
+      rows: Math.max(1, Math.floor((wm.desk.clientHeight - 2 * y0) / cell)),
+    };
+  };
+  type Grid = ReturnType<typeof grid>;
+  const inside = (c: Cell, g: Grid) =>
+    Number.isInteger(c[0]) && Number.isInteger(c[1]) && c[0] >= 0 && c[1] >= 0 && c[0] < g.cols && c[1] < g.rows;
+  /** the n-th cell in reading order: down then across (computer), across then down (phone) */
+  const flowCell = (n: number, g: Grid): Cell =>
+    narrow() ? [n % g.cols, Math.floor(n / g.cols)] : [Math.floor(n / g.rows), n % g.rows];
+  const nearestFree = (want: Cell, g: Grid, taken: Set<string>): Cell => {
+    let best: Cell | null = null;
+    let bestD = Infinity;
+    for (let c = 0; c < g.cols; c++)
+      for (let r = 0; r < g.rows; r++) {
+        if (taken.has(cellKey([c, r]))) continue;
+        const d = (c - want[0]) ** 2 + (r - want[1]) ** 2;
+        if (d < bestD) [best, bestD] = [[c, r], d];
+      }
+    return best ?? want;
+  };
+
+  /** the visitor's arrangement (saved), and where each icon is right now */
+  let prefs = load();
+  let now: Record<string, Cell> = {};
+
+  const place = (a: HTMLElement, c: Cell, g: Grid) => {
+    const li = item(a);
+    li.style.left = px(g.x0 + c[0] * g.cell);
+    li.style.top = px(g.y0 + c[1] * g.cell);
+  };
+  const layout = () => {
+    const g = grid();
+    const taken = new Set<string>();
+    const next: Record<string, Cell> = {};
+    // icons the visitor placed keep their spot while it is on screen and free...
+    for (const a of all) {
+      const id = a.dataset.icon!;
+      const c = prefs[id];
+      if (Array.isArray(c) && inside(c, g) && !taken.has(cellKey(c))) {
+        next[id] = c;
+        taken.add(cellKey(c));
+      }
+    }
+    // ...the rest take the next free places in order
+    let n = 0;
+    for (const a of all) {
+      const id = a.dataset.icon!;
+      if (next[id]) continue;
+      let c = flowCell(n, g);
+      while (inside(c, g) && taken.has(cellKey(c))) c = flowCell(++n, g);
+      if (!inside(c, g)) c = nearestFree(c, g, taken);
+      next[id] = c;
+      taken.add(cellKey(c));
+      n++;
+    }
+    now = next;
+    for (const a of all) place(a, now[a.dataset.icon!], g);
+    list.classList.add('free');
+  };
+  const drop = (a: HTMLElement) => {
+    const g = grid();
+    const li = item(a);
+    const id = a.dataset.icon!;
+    const want: Cell = [
+      clamp(Math.round((li.offsetLeft - g.x0) / g.cell), 0, g.cols - 1),
+      clamp(Math.round((li.offsetTop - g.y0) / g.cell), 0, g.rows - 1),
+    ];
+    const taken = new Set(
+      Object.entries(now)
+        .filter(([k]) => k !== id)
+        .map(([, c]) => cellKey(c)),
+    );
+    const c = taken.has(cellKey(want)) ? nearestFree(want, g, taken) : want;
+    now = { ...now, [id]: c };
+    place(a, c, g);
+    prefs = { ...now };
+    save(prefs);
+  };
+
+  layout();
+  let raf = 0;
+  addEventListener('resize', () => {
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(layout);
+  });
+  wm.compact.addEventListener('change', () => {
+    prefs = load();
+    layout();
+  });
+
+  // ── Pressing, dragging and opening ───────────────────────────────
   for (const a of all) {
     a.addEventListener('pointerdown', (e) => {
       pointer = e.pointerType;
+      justDragged = false;
       select(a);
+      if (e.button !== 0) return;
+      const li = item(a);
+      const z = zoom();
+      const sx = e.clientX;
+      const sy = e.clientY;
+      const ox = li.offsetLeft;
+      const oy = li.offsetTop;
+      let moving = false;
+      a.setPointerCapture(e.pointerId);
+      const move = (m: PointerEvent) => {
+        const dx = m.clientX - sx;
+        const dy = m.clientY - sy;
+        if (!moving) {
+          // a small wobble is still a click; a finger needs a little more room
+          if (Math.hypot(dx, dy) < (m.pointerType === 'mouse' ? 4 : 10)) return;
+          moving = true;
+          li.classList.add('dragging');
+        }
+        li.style.left = px(clamp(ox + dx / z, 0, wm.desk.clientWidth - li.offsetWidth));
+        li.style.top = px(clamp(oy + dy / z, 0, wm.desk.clientHeight - li.offsetHeight));
+      };
+      const end = (u: PointerEvent) => {
+        a.removeEventListener('pointermove', move);
+        a.removeEventListener('pointerup', end);
+        a.removeEventListener('pointercancel', end);
+        if (!moving) return;
+        li.classList.remove('dragging');
+        justDragged = true;
+        if (u.type === 'pointercancel') layout(); // put it back
+        else drop(a);
+      };
+      a.addEventListener('pointermove', move);
+      a.addEventListener('pointerup', end);
+      a.addEventListener('pointercancel', end);
     });
     a.addEventListener('focus', () => select(a));
     a.addEventListener('click', (e) => {
+      if (justDragged) {
+        // the end of a drag is not a click
+        justDragged = false;
+        e.preventDefault();
+        return;
+      }
       if (e.ctrlKey || e.metaKey || e.shiftKey || e.altKey) return; // let the browser open it in a new tab
       e.preventDefault();
       // a mouse needs a double-click; a finger, a pen or the Enter key need one
@@ -60,12 +230,32 @@ function icons(wm: WM) {
   }
 
   // pressing on the empty desktop clears the selection and deactivates windows
+  const isBackground = (t: HTMLElement) => t === wm.desk || t.matches('.icons, .icons > li, .wallpaper, .wallpaper *');
   wm.desk.addEventListener('pointerdown', (e) => {
-    const t = e.target as HTMLElement;
-    if (t === wm.desk || t.matches('.icons, .icons > li')) {
+    if (isBackground(e.target as HTMLElement)) {
       select(null);
       wm.deactivate();
     }
+  });
+
+  // ── Right-click on the empty desktop ─────────────────────────────
+  const menu = document.getElementById('desk-menu');
+  if (!menu) return;
+  wm.desk.addEventListener('contextmenu', (e) => {
+    if (!isBackground(e.target as HTMLElement)) return; // icons and windows keep the browser's own menu
+    e.preventDefault();
+    const z = zoom();
+    menu.showPopover();
+    menu.style.left = px(Math.max(0, Math.min(e.clientX / z, innerWidth / z - menu.offsetWidth - 2)));
+    menu.style.top = px(Math.max(0, Math.min(e.clientY / z, innerHeight / z - menu.offsetHeight - 2)));
+  });
+  menu.addEventListener('menu', (e) => {
+    const action = (e as CustomEvent<string>).detail;
+    if (action === 'arrange') {
+      prefs = {};
+      save(null);
+      layout();
+    } else if (action === 'refresh') location.reload();
   });
 }
 
