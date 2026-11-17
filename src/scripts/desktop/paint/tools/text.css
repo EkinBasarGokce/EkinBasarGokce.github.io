@@ -6,15 +6,22 @@
   outline: 1px dashed var(--sel);
   pointer-events: none;
 }
-/* the hard-edged letters exactly as they will go into the picture */
+/* the hard-edged letters exactly as they will go into the picture, at their
+   place in a canvas the size of the picture (a child of core.overlay, not of
+   the frame), so they land on the picture's own screen pixels */
 .pt-overlay .pt-textshown {
   position: absolute;
   left: 0;
   top: 0;
+  width: 100%;
+  height: 100%;
   display: block;
-  background: transparent;
+  background: none;
   image-rendering: pixelated;
   pointer-events: none;
+}
+.pt-overlay .pt-textshown[hidden] {
+  display: none;
 }
 /* the textarea and its hidden twin lay text out the same way */
 .pt-overlay .pt-textflow {

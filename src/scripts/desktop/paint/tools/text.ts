@@ -8,11 +8,19 @@
  * breaks them (read back from a hidden twin with the same font and width),
  * each word is drawn with canvas fillText where the browser laid it out, and
  * the result is thresholded at 50% alpha, so the letters have hard edges.
+ * The preview is a canvas the size of the picture over it (like a floating
+ * selection), so the browser puts its pixels on the same screen pixels.
+ *
+ * As in 98 the box never grows past the bottom of the picture: typing that
+ * would need another line there is refused. While the box is open, the Edit
+ * menu (Cut, Copy, Paste, Select All, Undo, Repeat) works on the text, and a
+ * menu command or dialog that leaves the box open hands the keyboard back.
  *
  * A "Fonts" mini window (typeface, size, bold, italic, underline) floats over
- * the top of the workspace while the tool is chosen. The options box picks
- * an opaque or transparent background (core.st.opaque). The text is drawn in
- * the foreground colour, which can change while typing.
+ * the workspace while the tool is chosen, where it covers neither the picture
+ * (when there is room) nor the box. The options box picks an opaque or
+ * transparent background (core.st.opaque). The text is drawn in the
+ * foreground colour, which can change while typing.
  */
 import * as R from '../raster';
 import { type Core, type Pt, hex } from '../core';
@@ -83,8 +91,24 @@ export function install(core: Core) {
   let frame: HTMLElement | null = null;
   let ta: HTMLTextAreaElement | null = null;
   let twin: HTMLElement | null = null;
-  let shown: HTMLCanvasElement | null = null;
   let lastAt: Pt = { x: 0, y: 0 };
+  /** the text has been edited since the box opened (so the textarea has its own undo) */
+  let edited = false;
+  /** a handle or edge being dragged: its box before the drag, and a way to stop listening */
+  let grab: { orig: R.Box; stop(): void } | null = null;
+
+  // The preview: a canvas the size of the picture, exactly over it (like
+  // .pt-sel-float), so its pixels land on the same screen pixels as the
+  // picture's at any page zoom. It holds the letters at the box's place.
+  const shown = document.createElement('canvas');
+  shown.className = 'pt-textshown';
+  shown.setAttribute('aria-hidden', 'true');
+  shown.width = 0;
+  shown.height = 0;
+  shown.hidden = true;
+  core.overlay.append(shown);
+  /** the part of the preview canvas drawn last (cleared before the next draw) */
+  let painted: R.Box | null = null;
 
   const shownBox = (b: R.Box): R.Box => ({ x0: b.x0, y0: b.y0, x1: b.x1, y1: b.y0 + shownH - 1 });
   /** the part of the shown box inside the picture, as a width and height from its corner */
@@ -205,25 +229,42 @@ export function install(core: Core) {
 
   /** show exactly what a commit would put into the picture */
   function paintPreview() {
-    if (!ub || !shown || !ta) return;
-    const z = core.zoom();
-    const { w, h } = visible(shownBox(ub));
-    shown.width = Math.max(1, w);
-    shown.height = Math.max(1, h);
-    shown.style.width = `${w * z}px`;
-    shown.style.height = `${h * z}px`;
+    if (!ub || !ta) return;
     const caret = hex(core.st.fg);
     // (style reads back as rgb(), so remember what was set)
     if (ta.dataset.caret !== caret) ta.style.caretColor = ta.dataset.caret = caret;
+    const bm = core.bm();
+    if (shown.width !== bm.w || shown.height !== bm.h) {
+      shown.width = bm.w;
+      shown.height = bm.h;
+      painted = null;
+    }
     const ctx = shown.getContext('2d')!;
-    if (ta.value === '' || w === 0 || h === 0) return void ctx.clearRect(0, 0, shown.width, shown.height);
+    if (painted) ctx.clearRect(painted.x0, painted.y0, painted.x1 - painted.x0 + 1, painted.y1 - painted.y0 + 1);
+    painted = null;
+    shown.hidden = false;
+    const { w, h } = visible(shownBox(ub));
+    if (ta.value === '' || w === 0 || h === 0) return;
     const mask = rasterize(w, h);
     const img = ctx.createImageData(w, h);
     const px = new Uint32Array(img.data.buffer);
     const ink = core.st.fg >>> 0;
     const paper = core.st.opaque ? core.st.bg >>> 0 : 0;
     for (let i = 0; i < mask.length; i++) px[i] = mask[i] ? ink : paper;
-    ctx.putImageData(img, 0, 0);
+    ctx.putImageData(img, ub.x0, ub.y0);
+    painted = { x0: ub.x0, y0: ub.y0, x1: ub.x0 + w - 1, y1: ub.y0 + h - 1 };
+  }
+
+  /**
+   * As in 98, the box stops at the bottom of the picture: false when putting
+   * `s` in place of the selected text would need a line more than fits
+   * between the box's top and the bottom of the picture.
+   */
+  function fits(t: HTMLTextAreaElement, s: string) {
+    if (!ub) return true;
+    const v = t.value;
+    const next = layoutLines(v.slice(0, t.selectionStart) + s.replace(/\r\n?/g, '\n') + v.slice(t.selectionEnd), ub.x1 - ub.x0 + 1);
+    return !next || next.length <= Math.max(Math.floor((core.bm().h - ub.y0) / lineH), lines.length);
   }
 
   /** re-read the lines, grow the box to fit them and redraw the preview */
@@ -236,18 +277,29 @@ export function install(core: Core) {
     frame.style.width = `${w * z}px`;
     const next = layoutLines(ta.value, w);
     if (next) lines = next;
+    // Typing and pasting past the bottom are refused (fits), but a bigger
+    // font, a narrower box or an input method can still need more lines than
+    // fit below the box: then the box moves up, so no line falls off the picture.
+    const over = lines.length * lineH - (core.bm().h - ub.y0);
+    if (over > 0 && ub.y0 > 0) {
+      const up = Math.min(ub.y0, over);
+      ub = { ...ub, y0: ub.y0 - up, y1: ub.y1 - up };
+      frame.style.top = `${ub.y0 * z}px`;
+    }
     shownH = Math.max(ub.y1 - ub.y0 + 1, lines.length * lineH);
     core.place(frame, shownBox(ub));
     if (ta.scrollTop || ta.scrollLeft) ta.scrollTop = ta.scrollLeft = 0;
     paintPreview();
   }
-  /** after a font or zoom change */
+  /** after a font, zoom or picture change */
   function relayout() {
-    if (!frame) return;
-    const z = core.zoom();
-    frame.style.font = cssFont(z);
-    frame.style.lineHeight = `${lineH * z}px`;
-    refresh();
+    if (frame) {
+      const z = core.zoom();
+      frame.style.font = cssFont(z);
+      frame.style.lineHeight = `${lineH * z}px`;
+      refresh();
+    }
+    placeBar();
   }
 
   // the text follows the colour boxes and Draw Opaque while it is typed
@@ -271,8 +323,6 @@ export function install(core: Core) {
     lastAt = { x: b.x0, y: b.y0 };
     frame = document.createElement('div');
     frame.className = 'pt-textframe';
-    shown = document.createElement('canvas');
-    shown.className = 'pt-textshown';
     twin = document.createElement('div');
     twin.className = 'pt-textflow pt-texttwin';
     twin.setAttribute('aria-hidden', 'true');
@@ -281,18 +331,31 @@ export function install(core: Core) {
     t.spellcheck = false;
     t.autocomplete = 'off';
     t.setAttribute('aria-label', 'Text. Type here; Esc puts it into the picture.');
-    frame.append(shown, twin, t);
+    frame.append(twin, t);
     for (const e of EDGES) frame.append(grip('pt-textedge', e, 'move'));
     for (const d of HANDLES) frame.append(grip('pt-texthandle', d, d));
-    t.addEventListener('input', refresh);
+    edited = false;
+    // refuse typing, a paste or a drop that would not fit
+    t.addEventListener('beforeinput', (e) => {
+      if (e.isComposing || !e.inputType.startsWith('insert')) return;
+      const add = /^insert(LineBreak|Paragraph)$/.test(e.inputType) ? '\n' : (e.data ?? e.dataTransfer?.getData('text/plain') ?? null);
+      if (add !== null && !fits(t, add)) e.preventDefault();
+    });
+    t.addEventListener('input', () => {
+      edited = true;
+      refresh();
+      syncEditMenu();
+    });
     t.addEventListener('scroll', () => {
       t.scrollTop = 0;
       t.scrollLeft = 0;
     });
+    for (const ev of ['select', 'keyup', 'pointerup', 'focus']) t.addEventListener(ev, syncEditMenu);
     t.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !e.isComposing) {
         e.preventDefault();
-        commit(true);
+        // Esc in the middle of dragging a handle only cancels the drag
+        if (!cancelGrab()) commit(true);
         return;
       }
       if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey) {
@@ -306,20 +369,29 @@ export function install(core: Core) {
     });
     core.overlay.append(frame);
     relayout();
-    placeBar();
     seen = '';
     tick();
     t.focus({ preventScroll: true });
+    syncEditMenu();
   }
 
   function close() {
     cancelAnimationFrame(watch);
     watch = 0;
+    grab?.stop();
+    grab = null;
     frame?.remove();
-    frame = ta = twin = shown = null;
+    frame = ta = twin = null;
     ub = null;
     lines = [];
     shownH = 0;
+    // let the picture-sized preview's memory go
+    shown.hidden = true;
+    shown.width = 0;
+    shown.height = 0;
+    painted = null;
+    core.status.size('');
+    syncEditMenu();
   }
 
   /** put the text into the picture (one undo step); an empty box puts nothing */
@@ -381,8 +453,10 @@ export function install(core: Core) {
       e.preventDefault();
       e.stopPropagation();
       g.setPointerCapture(e.pointerId);
+      grab?.stop();
       measureFont();
       const bm = core.bm();
+      const orig = { ...ub };
       const start = shownBox(ub);
       const p0 = core.toPixel(e);
       const mw = minW();
@@ -410,13 +484,18 @@ export function install(core: Core) {
         refresh();
         core.status.size(`${b.x1 - b.x0 + 1}x${shownH}`);
       };
-      const end = (u: PointerEvent) => {
+      const stop = () => {
         g.removeEventListener('pointermove', move);
         g.removeEventListener('pointerup', end);
         g.removeEventListener('pointercancel', end);
         core.status.size('');
+        if (g.hasPointerCapture(e.pointerId)) g.releasePointerCapture(e.pointerId);
+        grab = null;
+      };
+      const end = (u: PointerEvent) => {
+        stop();
         if (u.type === 'pointercancel' && ub) {
-          ub = start;
+          ub = orig;
           refresh();
         }
         if (ub) lastAt = { x: ub.x0, y: ub.y0 };
@@ -426,8 +505,21 @@ export function install(core: Core) {
       g.addEventListener('pointermove', move);
       g.addEventListener('pointerup', end);
       g.addEventListener('pointercancel', end);
+      grab = { orig, stop };
     });
     return g;
+  }
+  /** Esc while a handle or edge is dragged: the box goes back to where it was. False if no drag. */
+  function cancelGrab() {
+    if (!grab) return false;
+    const { orig } = grab;
+    grab.stop();
+    if (ub) {
+      ub = orig;
+      refresh();
+    }
+    ta?.focus({ preventScroll: true });
+    return true;
   }
 
   // ── Fonts: a small 98-style tool window over the workspace ───────
@@ -491,8 +583,11 @@ export function install(core: Core) {
     b.addEventListener('click', () => toggle(b.dataset.f as 'bold' | 'italic' | 'underline'));
   }
 
-  // Where the bar sits: top right of the workspace (or bottom right when that
-  // would cover the text box) until the visitor drags it somewhere.
+  // Where the bar sits, until the visitor drags it somewhere: the top right of
+  // the workspace, or the bottom right, whichever leaves the picture (and its
+  // resize handles) uncovered, as on a phone where the picture fills the width
+  // but not the height. When both would cover the picture, the one that does
+  // not cover the text box.
   let barAt: { x: number; y: number } | null = null;
   function placeBar() {
     if (bar.hidden) return;
@@ -508,11 +603,28 @@ export function install(core: Core) {
       bar.style.top = `${v.offsetTop + clamp(y, 0, Math.max(0, vh - bh))}px`;
     };
     if (barAt) return put(barAt.x, barAt.y);
-    put(vw - bw - 4, 4);
-    if (!frame) return;
-    const a = bar.getBoundingClientRect();
-    const b = frame.getBoundingClientRect();
-    if (a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom) put(vw - bw - 4, vh - bh - 4);
+    const spots: [number, number][] = [
+      [vw - bw - 4, 4],
+      [vw - bw - 4, vh - bh - 4],
+    ];
+    // the part of the picture in view, with room for its handles (screen pixels)
+    const vr = v.getBoundingClientRect();
+    const cr = core.canvas.getBoundingClientRect();
+    const m = 14 * (vr.width / (v.offsetWidth || 1) || 1);
+    const pic = { left: Math.max(cr.left, vr.left), top: Math.max(cr.top, vr.top), right: Math.min(cr.right + m, vr.right), bottom: Math.min(cr.bottom + m, vr.bottom) };
+    const box = frame?.getBoundingClientRect();
+    const covers = (r: { left: number; top: number; right: number; bottom: number } | undefined) => {
+      if (!r || r.left >= r.right || r.top >= r.bottom) return false;
+      const a = bar.getBoundingClientRect();
+      return a.left < r.right && r.left < a.right && a.top < r.bottom && r.top < a.bottom;
+    };
+    for (const ok of [() => !covers(pic) && !covers(box), () => !covers(box)]) {
+      for (const [x, y] of spots) {
+        put(x, y);
+        if (ok()) return;
+      }
+    }
+    put(...spots[0]);
   }
   new ResizeObserver(placeBar).observe(core.view);
   const title = bar.querySelector<HTMLElement>('.pt-fontbar-title')!;
@@ -565,7 +677,99 @@ export function install(core: Core) {
     paintPreview();
   });
 
-  core.onLayout(relayout);
+  // ── The Edit menu while the box is open: it works on the text, as in 98 ──
+  const EDIT_ACTIONS = new Set(['cut', 'copy', 'paste', 'selectall', 'undo', 'redo']);
+  /** Cut and Copy: for selected text while the box is open, otherwise for a picture selection */
+  function syncEditMenu() {
+    const on = ta ? ta.selectionStart !== ta.selectionEnd : !!core.selection?.active();
+    for (const a of ['cut', 'copy']) {
+      const item = core.win.querySelector(`[data-action="${a}"]`);
+      if (on) item?.removeAttribute('aria-disabled');
+      else item?.setAttribute('aria-disabled', 'true');
+    }
+  }
+  document.addEventListener('selectionchange', () => ta && syncEditMenu());
+  core.win.addEventListener('pointerdown', (e) => ta && (e.target as Element).closest?.('.mb-btn') && syncEditMenu(), true);
+  /** put text in place of the selection as if typed (so the textarea can undo it) */
+  function insertText(t: HTMLTextAreaElement, s: string) {
+    if (document.execCommand('insertText', false, s)) return;
+    // no execCommand: put it in by hand
+    t.setRangeText(s, t.selectionStart, t.selectionEnd, 'end');
+    t.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+  async function editText(t: HTMLTextAreaElement, a: string) {
+    t.focus({ preventScroll: true });
+    if (a === 'selectall') {
+      t.select();
+      syncEditMenu();
+    } else if (a === 'cut' || a === 'copy') {
+      const s = t.value.slice(t.selectionStart, t.selectionEnd);
+      if (!s || document.execCommand(a)) return;
+      try {
+        await navigator.clipboard.writeText(s);
+      } catch {
+        return;
+      }
+      if (a === 'cut' && ta === t) {
+        t.focus({ preventScroll: true });
+        if (!document.execCommand('delete')) insertText(t, '');
+      }
+    } else if (a === 'paste') {
+      let s = '';
+      try {
+        s = await navigator.clipboard.readText();
+      } catch {
+        return; // no permission or no Clipboard API; Ctrl+V still works
+      }
+      s = s.replace(/\r\n?/g, '\n');
+      // (execCommand sends no beforeinput, so the fit is checked here)
+      if (!s || ta !== t || !fits(t, s)) return;
+      t.focus({ preventScroll: true });
+      insertText(t, s);
+    } else if (edited) {
+      document.execCommand(a); // undo / redo the typing
+    } else {
+      // nothing typed in this box: put it away and undo (or redo) the picture
+      commit(false);
+      core.win.dispatchEvent(new CustomEvent('menu', { detail: a }));
+    }
+  }
+  // Before any other module (the core's Undo, select.ts's Paste...) sees it.
+  document.addEventListener(
+    'menu',
+    (e) => {
+      const a = (e as CustomEvent<string>).detail;
+      const t = ta;
+      if (!t || !EDIT_ACTIONS.has(a) || !(e.target instanceof Node) || !core.win.contains(e.target)) return;
+      e.stopPropagation();
+      void editText(t, a);
+    },
+    true,
+  );
+
+  // A menu command or a dialog that leaves the box open hands the keyboard
+  // back to it, if it had the keyboard before (the core focuses the picture).
+  let hadKeys = false;
+  document.addEventListener('focusin', (e) => {
+    const t = e.target as HTMLElement;
+    if (t === ta) hadKeys = true;
+    else if (core.win.contains(t) && t !== core.win && t !== core.canvas && !t.closest('.mi, .mb-btn, [data-pt-colorbox], [data-pt-options]')) hadKeys = false;
+  });
+  const keysBack = () => {
+    const t = ta;
+    if (!t || !hadKeys) return;
+    setTimeout(() => ta === t && !document.querySelector('dialog[open]') && t.focus({ preventScroll: true }));
+  };
+  core.win.addEventListener('menu', keysBack);
+  document.addEventListener('close', (e) => (e.target as Element).matches?.('.pt-dialog, .pt-viewbitmap') && keysBack(), true);
+
+  // a zoom change scrolls the view after the layout: place the bar again once it has
+  let barFrame = 0;
+  core.onLayout(() => {
+    relayout();
+    cancelAnimationFrame(barFrame);
+    barFrame = requestAnimationFrame(placeBar);
+  });
 
   // ── The tool ─────────────────────────────────────────────────────
   let band: { a: Pt; b: Pt; el: HTMLElement; cx: number; cy: number; moved: boolean; hadBox: boolean } | null = null;
@@ -636,7 +840,7 @@ export function install(core: Core) {
     cancel: endBand,
     key(e) {
       if (e.key === 'Escape' && ub) {
-        commit(true);
+        if (!cancelGrab()) commit(true);
         return true;
       }
       // the keyboard way in: Enter on the picture opens a box where the last one was
