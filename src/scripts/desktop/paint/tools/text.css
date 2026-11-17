@@ -1,0 +1,238 @@
+/* Paint: the Text tool (tools/text.ts) */
+
+/* the box being typed in, over the picture (a child of core.overlay) */
+.pt-overlay .pt-textframe {
+  position: absolute;
+  outline: 1px dashed var(--sel);
+  pointer-events: none;
+}
+/* the hard-edged letters exactly as they will go into the picture */
+.pt-overlay .pt-textshown {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  background: transparent;
+  image-rendering: pixelated;
+  pointer-events: none;
+}
+/* the textarea and its hidden twin lay text out the same way */
+.pt-overlay .pt-textflow {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font: inherit;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-align: left;
+  text-indent: 0;
+  text-transform: none;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: normal;
+  tab-size: 8;
+}
+/* see-through: the caret and the selection show, the letters come from the preview */
+.pt-overlay .pt-textedit {
+  height: 100%;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  color: transparent;
+  resize: none;
+  overflow: hidden;
+  scrollbar-width: none;
+  outline: none;
+  pointer-events: auto;
+  cursor: text;
+  -webkit-tap-highlight-color: transparent;
+}
+.pt-overlay .pt-texttwin {
+  visibility: hidden;
+  pointer-events: none;
+}
+/* the rubber band while a box is dragged out */
+.pt-overlay .pt-textband {
+  position: absolute;
+  outline: 1px dashed var(--sel);
+  pointer-events: none;
+}
+
+/* drag the border to move the box, the small squares to resize it */
+.pt-overlay .pt-textedge {
+  position: absolute;
+  pointer-events: auto;
+  touch-action: none;
+  cursor: move;
+  --t: 4px;
+}
+.pt-textedge[data-at='n'],
+.pt-textedge[data-at='s'] {
+  left: 0;
+  right: 0;
+  height: var(--t);
+}
+.pt-textedge[data-at='n'] {
+  bottom: 100%;
+}
+.pt-textedge[data-at='s'] {
+  top: 100%;
+}
+.pt-textedge[data-at='e'],
+.pt-textedge[data-at='w'] {
+  top: 0;
+  bottom: 0;
+  width: var(--t);
+}
+.pt-textedge[data-at='w'] {
+  right: 100%;
+}
+.pt-textedge[data-at='e'] {
+  left: 100%;
+}
+.pt-overlay .pt-texthandle {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  margin: -4px 0 0 -4px;
+  pointer-events: auto;
+  touch-action: none;
+  background: linear-gradient(var(--sel), var(--sel)) center / 3px 3px no-repeat;
+}
+.pt-texthandle[data-at='nw'],
+.pt-texthandle[data-at='n'],
+.pt-texthandle[data-at='ne'] {
+  top: 0;
+}
+.pt-texthandle[data-at='w'],
+.pt-texthandle[data-at='e'] {
+  top: 50%;
+}
+.pt-texthandle[data-at='sw'],
+.pt-texthandle[data-at='s'],
+.pt-texthandle[data-at='se'] {
+  top: 100%;
+}
+.pt-texthandle[data-at='nw'],
+.pt-texthandle[data-at='w'],
+.pt-texthandle[data-at='sw'] {
+  left: 0;
+}
+.pt-texthandle[data-at='n'],
+.pt-texthandle[data-at='s'] {
+  left: 50%;
+}
+.pt-texthandle[data-at='ne'],
+.pt-texthandle[data-at='e'],
+.pt-texthandle[data-at='se'] {
+  left: 100%;
+}
+.pt-texthandle[data-at='nw'],
+.pt-texthandle[data-at='se'] {
+  cursor: nwse-resize;
+}
+.pt-texthandle[data-at='ne'],
+.pt-texthandle[data-at='sw'] {
+  cursor: nesw-resize;
+}
+.pt-texthandle[data-at='n'],
+.pt-texthandle[data-at='s'] {
+  cursor: ns-resize;
+}
+.pt-texthandle[data-at='e'],
+.pt-texthandle[data-at='w'] {
+  cursor: ew-resize;
+}
+@media (pointer: coarse) {
+  .pt-overlay .pt-textedge {
+    --t: 12px;
+  }
+  .pt-overlay .pt-texthandle {
+    width: 24px;
+    height: 24px;
+    margin: -12px 0 0 -12px;
+    background-size: 6px 6px;
+  }
+}
+
+/* the Fonts toolbar: a small tool window over the top of the workspace */
+.pt-fontbar {
+  position: absolute;
+  z-index: 4;
+  padding: 2px;
+  background: var(--face);
+  box-shadow: var(--raised);
+}
+.pt-fontbar-title {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: calc(var(--tb-h) + 2px);
+  padding: 0 1px 0 3px;
+  background: linear-gradient(90deg, var(--title-a), var(--title-b));
+  color: var(--hilite);
+  font-weight: bold;
+  user-select: none;
+  touch-action: none;
+}
+.win:not([data-active]) .pt-fontbar-title {
+  background: linear-gradient(90deg, var(--title-ia), var(--title-ib));
+  color: var(--face);
+}
+.pt-fontbar-title span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.pt-fontbar-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px;
+  padding: 4px 2px 2px;
+}
+.pt-fontbar select[data-f='face'] {
+  width: 132px;
+}
+.pt-fontbar select[data-f='size'] {
+  width: 50px;
+}
+.pt-fontbtn {
+  width: 23px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  box-shadow: var(--button);
+  font: 14px / 1 'Times New Roman', Times, serif;
+}
+.pt-fontbtn[aria-pressed='true'] {
+  box-shadow: var(--pressed);
+  background: var(--dither);
+}
+.pt-fontbtn[aria-pressed='true'] > * {
+  translate: 1px 1px;
+}
+.pt-fontbtn:focus-visible {
+  outline: 1px dotted var(--dark);
+  outline-offset: -4px;
+}
+@media (pointer: coarse) {
+  .pt-fontbar select {
+    height: 30px;
+  }
+  .pt-fontbar select[data-f='face'] {
+    width: 116px;
+  }
+  .pt-fontbar select[data-f='size'] {
+    width: 54px;
+  }
+  .pt-fontbtn {
+    width: 30px;
+    height: 30px;
+  }
+}
