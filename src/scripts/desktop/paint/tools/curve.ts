@@ -111,6 +111,13 @@ function batched(core: Core, draw: () => void) {
 }
 
 export function install(core: Core) {
+  /**
+   * Enter and Esc act on the shape only when the picture (or the Paint window
+   * itself) has the focus: on a focused menu title, swatch or tool button they
+   * belong to that control.
+   */
+  const fromPicture = (e: KeyboardEvent) => e.target === core.canvas || e.target === core.win;
+
   // ── Curve ────────────────────────────────────────────────────────
   {
     /** [start, end, first control, second control], filled in as the curve is drawn */
@@ -195,7 +202,7 @@ export function install(core: Core) {
       },
       cancel,
       key(e) {
-        if (!pts.length) return false;
+        if (!pts.length || !fromPicture(e)) return false;
         if (e.key === 'Escape') cancel();
         else if (e.key === 'Enter' && !dragging) finish();
         else return false;
@@ -220,6 +227,8 @@ export function install(core: Core) {
     let paper: R.Color = 0;
     let lastDown = -Infinity;
     let lastUp: { x: number; y: number } | null = null;
+    /** a click on the first corner just closed the polygon: when it was pressed and where it let go */
+    let closedAt: { t: number; x: number; y: number } | null = null;
     const area = previewArea(core);
     const help = 'Draws a polygon. Drag the first side, click each corner, double-click to finish. Shift: 45° steps.';
     const helpBusy = 'Click the next corner. Double-click or click the first corner to finish; Esc cancels.';
@@ -294,7 +303,15 @@ export function install(core: Core) {
       down(i) {
         if (dragging || swallow) return;
         const t = i.e.timeStamp;
+        const slop = i.e.pointerType === 'mouse' ? DOUBLE_PX.mouse : DOUBLE_PX.touch;
         if (!pts.length) {
+          // the second press of a double-click (or double-tap) whose first click closed the polygon on its first corner
+          const c = closedAt;
+          closedAt = null;
+          if (c && t - c.t <= DOUBLE_MS && Math.hypot(i.e.clientX - c.x, i.e.clientY - c.y) <= slop) {
+            swallow = true;
+            return;
+          }
           core.beginOp();
           ink = i.ink;
           paper = i.paper;
@@ -302,7 +319,6 @@ export function install(core: Core) {
           band = i.p;
         } else {
           // the second press of a double-click (or double-tap) at the corner just placed closes it
-          const slop = i.e.pointerType === 'mouse' ? DOUBLE_PX.mouse : DOUBLE_PX.touch;
           if (pts.length >= 2 && lastUp && t - lastDown <= DOUBLE_MS && Math.hypot(i.e.clientX - lastUp.x, i.e.clientY - lastUp.y) <= slop) {
             swallow = true;
             finish();
@@ -329,7 +345,11 @@ export function install(core: Core) {
         dragging = false;
         lastUp = { x: i.e.clientX, y: i.e.clientY };
         core.status.size('');
-        if (pts.length >= 3 && nearFirst(i.p, i.e)) return finish();
+        if (pts.length >= 3 && nearFirst(i.p, i.e)) {
+          finish();
+          closedAt = { t: lastDown, x: i.e.clientX, y: i.e.clientY };
+          return;
+        }
         const q = sideEnd(i.p, i.shift);
         if (!same(q, pts[pts.length - 1])) pts.push(q);
         band = q;
@@ -355,7 +375,7 @@ export function install(core: Core) {
         cancel();
       },
       key(e) {
-        if (!pts.length) return false;
+        if (!pts.length || !fromPicture(e)) return false;
         if (e.key === 'Escape') cancel();
         else if (e.key === 'Enter' && !dragging) finish();
         else return false;
