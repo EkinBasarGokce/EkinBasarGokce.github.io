@@ -7,6 +7,8 @@
  * A grid with uneven rows fails the build.
  */
 
+import { PAINT_ICON, TOOL_ICONS } from './paint-icons';
+
 const PALETTE: Record<string, string> = {
   k: '#000000',
   w: '#ffffff',
@@ -212,6 +214,7 @@ export const ICONS = {
     '.....kkkkkk.....',
     '................',
   ],
+  paint: PAINT_ICON,
 } satisfies Record<string, string[]>;
 
 export type IconName = keyof typeof ICONS;
@@ -273,6 +276,12 @@ export function iconUri(name: IconName, opts: { shortcut?: boolean } = {}): stri
     rows = grid.map((r) => r.join(''));
   }
   return uri(pixelSvg(rows));
+}
+
+export type ToolName = keyof typeof TOOL_ICONS;
+/** A Paint toolbox icon as a data URI (drawings in ./paint-icons.ts). */
+export function toolUri(name: ToolName): string {
+  return uri(pixelSvg(TOOL_ICONS[name]));
 }
 
 /** A title-bar glyph as a data URI, drawn in one colour. */

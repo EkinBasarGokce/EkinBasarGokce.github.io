@@ -46,6 +46,7 @@ export function initMenus() {
 
   // while one menu is open, pointing at another title on the same bar opens that one
   document.addEventListener('pointerover', (e) => {
+    if (e.pointerType !== 'mouse') return; // a finger "hovers" as it taps; let the tap decide
     const btn = (e.target as HTMLElement).closest<HTMLElement>('.mb-btn');
     if (btn && open && open !== btn.parentElement && open.parentElement === btn.parentElement!.parentElement) {
       show(btn.parentElement!);
@@ -68,6 +69,9 @@ export function initMenus() {
       return;
     }
     const popover = mi.closest<HTMLElement>('[popover]');
+    // the menu is about to hide: keep keyboard focus in its window, not on a hidden item
+    const owner = mi.closest<HTMLElement>('[data-window]');
+    if (owner && mi.contains(document.activeElement)) owner.focus({ preventScroll: true });
     close();
     try {
       popover?.hidePopover();

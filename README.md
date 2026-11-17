@@ -84,6 +84,8 @@ Visitors can drag icons anywhere. Their arrangement is kept in their own browser
 
 The wallpaper (`src/assets/desktop/wallpaper.jpg`) is a photo by Se. Tsuchiya on Unsplash (https://unsplash.com/photos/SVVKbAy5CDc), used under the Unsplash License. To change it, replace that file.
 
+**Paint** (`src/components/desktop/apps/Paint.astro`, `src/scripts/desktop/paint/`) draws its own hard-edged pixels in `raster.ts`, the pixel engine, rather than using the browser's smoothed drawing. `npm test` runs the engine's tests; CI runs them before every build. `paint.ts` runs the tools, undo, files, dialogs and autosave. Paint's code loads only the first time the window opens. Drawings stay in the visitor's browser: Save downloads a PNG or BMP, and an open picture is kept in local storage until Paint is closed.
+
 The window manager (`src/scripts/desktop/wm.ts`) handles opening, dragging, resizing, minimising, the taskbar, and Back on phones. `/desktop/#mail` opens with Mail already open.
 
 ## Deploying

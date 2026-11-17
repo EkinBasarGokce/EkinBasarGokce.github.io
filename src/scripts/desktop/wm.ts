@@ -56,6 +56,7 @@ export class WM {
       if (this.activeId === id && !el.hasAttribute('data-min')) this.minimize(id);
       else {
         el.removeAttribute('data-min');
+        this.keepInside();
         this.focus(id, true);
       }
     });
@@ -84,6 +85,7 @@ export class WM {
     if (from) this.returnTo.set(id, from);
     if (el.hasAttribute('data-open')) {
       el.removeAttribute('data-min');
+      this.keepInside();
       this.focus(id, true);
       return;
     }
@@ -262,7 +264,7 @@ export class WM {
     const W = this.desk.clientWidth;
     const H = this.desk.clientHeight;
     for (const el of this.wins.values()) {
-      if (!el.hasAttribute('data-open')) continue;
+      if (!el.hasAttribute('data-open') || el.hasAttribute('data-min')) continue; // hidden: measured as 0x0
       if (this.compact.matches && !el.hasAttribute('data-dialog')) {
         el.setAttribute('data-max', '');
         continue;

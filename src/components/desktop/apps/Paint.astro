@@ -1,0 +1,121 @@
+---
+/**
+ * Paint, in the spirit of Windows 98: a tool box with its options, the
+ * picture on a grey workspace, the colour box and a status bar. It draws its
+ * own hard-edged pixels (src/scripts/desktop/paint/raster.ts); the controller
+ * (paint/paint.ts) loads the first time Paint opens. Drawings never leave the
+ * visitor's browser.
+ */
+import Window from '../Window.astro';
+import type { Menu } from '../types';
+import { toolUri, type ToolName } from '../../../lib/pixel';
+
+const TOOLS: [ToolName, string][] = [
+  ['eraser', 'Eraser/Color Eraser'],
+  ['fill', 'Fill With Color'],
+  ['pick', 'Pick Color'],
+  ['pencil', 'Pencil'],
+  ['brush', 'Brush'],
+  ['airbrush', 'Airbrush'],
+  ['line', 'Line'],
+  ['rect', 'Rectangle'],
+  ['ellipse', 'Ellipse'],
+  ['roundrect', 'Rounded Rectangle'],
+];
+
+// the classic 28-colour box: dark row, then light row
+const COLORS = [
+  '#000000', '#808080', '#800000', '#808000', '#008000', '#008080', '#000080',
+  '#800080', '#808040', '#004040', '#0080ff', '#004080', '#8000ff', '#804000',
+  '#ffffff', '#c0c0c0', '#ff0000', '#ffff00', '#00ff00', '#00ffff', '#0000ff',
+  '#ff00ff', '#ffff80', '#00ff80', '#80ffff', '#8080ff', '#ff0080', '#ff8040',
+];
+
+const menus: Menu[] = [
+  {
+    label: '&File',
+    items: [
+      { label: '&New', action: 'new' },
+      { label: '&Open...', action: 'open', key: 'Ctrl+O' },
+      { label: '&Save', action: 'save', key: 'Ctrl+S' },
+      { label: 'Save &As...', action: 'saveas' },
+      'sep',
+      { label: 'E&xit', action: 'close' },
+    ],
+  },
+  {
+    label: '&Edit',
+    items: [
+      { label: '&Undo', action: 'undo', key: 'Ctrl+Z' },
+      { label: '&Repeat', action: 'redo', key: 'Ctrl+Y' },
+    ],
+  },
+  {
+    label: '&View',
+    items: [
+      { label: '&Tool Box', action: 'view-tools', checked: true },
+      { label: '&Color Box', action: 'view-colors', checked: true },
+      { label: '&Status Bar', action: 'view-status', checked: true },
+    ],
+  },
+  {
+    label: '&Image',
+    items: [
+      { label: '&Flip/Rotate...', action: 'fliprotate' },
+      { label: '&Invert Colors', action: 'invert', key: 'Ctrl+I' },
+      { label: '&Attributes...', action: 'attributes' },
+      { label: '&Clear Image', action: 'clear' },
+    ],
+  },
+  { label: '&Help', items: [{ label: '&About Paint', action: 'about' }] },
+];
+---
+
+<Window id="paint" title="untitled - Paint" icon="paint" w={640} h={470} minW={300} minH={280} menus={menus} class="paint">
+  <div class="pt-main">
+    <div class="pt-tools" data-pt-toolbox>
+      <div class="pt-toolgrid" role="toolbar" aria-label="Tools" aria-orientation="vertical">
+        {
+          TOOLS.map(([id, label]) => (
+            <button
+              type="button"
+              class="pt-tool"
+              data-tool={id}
+              aria-pressed={id === 'pencil' ? 'true' : 'false'}
+              aria-label={label}
+              title={label}
+              tabindex={id === 'pencil' ? 0 : -1}
+            >
+              <img src={toolUri(id)} width="16" height="16" alt="" />
+            </button>
+          ))
+        }
+      </div>
+      <div class="pt-options" role="group" aria-label="Tool options" data-pt-options></div>
+    </div>
+    <div class="pt-view" data-pt-view>
+      <div class="pt-paper" data-pt-paper>
+        <canvas width="480" height="300" tabindex="0" aria-label="Picture. Draw with the mouse, a pen or a finger." data-pt-canvas></canvas>
+        <span class="pt-handle" data-pt-handle="e" title="Drag to change the picture's width" aria-hidden="true"></span>
+        <span class="pt-handle" data-pt-handle="s" title="Drag to change the picture's height" aria-hidden="true"></span>
+        <span class="pt-handle" data-pt-handle="se" title="Drag to change the picture's size" aria-hidden="true"></span>
+        <span class="pt-ghost" data-pt-ghost hidden></span>
+      </div>
+    </div>
+  </div>
+  <div class="pt-colors" data-pt-colorbox>
+    <div class="pt-current" title="Foreground and background colors">
+      <span class="pt-bg" data-pt-bg></span>
+      <span class="pt-fg" data-pt-fg></span>
+    </div>
+    <div class="pt-swatches" role="group" aria-label="Colors: click for the foreground, right-click or long-press for the background">
+      {COLORS.map((c) => <button type="button" class="pt-swatch" style={`--c:${c}`} data-color={c} aria-label={`Color ${c}`} />)}
+    </div>
+  </div>
+  <div class="statusbar pt-status" slot="status">
+    <p data-pt-help>Ready</p>
+    <p class="pt-pos" data-pt-pos></p>
+    <p class="pt-size" data-pt-size></p>
+  </div>
+  <input type="file" accept="image/*" hidden data-pt-file />
+</Window>

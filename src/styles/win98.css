@@ -816,11 +816,13 @@ dialog.win::backdrop {
 .icon[data-selected]:focus span {
   border-color: #ffff80;
 }
-@media (max-width: 40rem) {
+/* keep in step with wm.compact in scripts/desktop/wm.ts */
+@media (max-width: 40rem), (max-height: 28rem) {
   .icons {
     inset: 6px 4px auto 4px;
     grid-auto-flow: row;
     grid-template-rows: none;
+    grid-auto-rows: var(--cell);
     grid-template-columns: repeat(auto-fill, var(--cell));
     justify-content: start;
   }
@@ -1247,6 +1249,231 @@ dialog.win::backdrop {
   display: grid;
   gap: 6px;
   padding-top: 10px;
+}
+
+/* Paint */
+.paint .win-body {
+  gap: 2px;
+}
+.pt-main {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 2px;
+}
+.pt-tools {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 3px;
+  min-height: 0;
+  overflow-y: auto; /* short screens: the options stay reachable */
+}
+.pt-toolgrid {
+  display: grid;
+  grid-template-columns: repeat(2, var(--pt-tool));
+}
+.pt-tool {
+  width: var(--pt-tool);
+  height: var(--pt-tool);
+  display: grid;
+  place-items: center;
+  box-shadow: var(--button);
+}
+.pt-tool[aria-pressed='true'] {
+  box-shadow: var(--pressed);
+  background: var(--dither);
+}
+.pt-tool[aria-pressed='true'] img {
+  translate: 1px 1px;
+}
+.pt-tool:focus-visible {
+  outline: 1px dotted var(--dark);
+  outline-offset: -4px;
+}
+.pt-options {
+  width: calc(var(--pt-tool) * 2 - 6px);
+  min-height: 70px;
+  display: grid;
+  place-items: center;
+  padding: 3px 0;
+  box-shadow: var(--shallow-in);
+}
+.pt-optgrid {
+  display: grid;
+  gap: 1px;
+}
+.pt-opt {
+  display: block;
+  padding: 0;
+  background: transparent;
+}
+.pt-opt canvas {
+  display: block;
+}
+.pt-opt:focus-visible {
+  outline: 1px dotted var(--dark);
+}
+.pt-view {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  padding: 4px 14px 14px 4px;
+  background: var(--shadow);
+  box-shadow: var(--sunken);
+}
+.pt-paper {
+  position: relative;
+  width: max-content;
+}
+.pt-paper canvas {
+  display: block;
+  background: #fff;
+  image-rendering: pixelated;
+  touch-action: none;
+  cursor: crosshair;
+  user-select: none;
+}
+.pt-paper canvas[data-tool='fill'],
+.pt-paper canvas[data-tool='pick'] {
+  cursor: cell;
+}
+.pt-paper canvas:focus-visible {
+  outline: 1px dotted var(--hilite);
+  outline-offset: 1px;
+}
+/* small handles on the picture's edges, as in 98; the hit area is larger than the square */
+.pt-handle {
+  position: absolute;
+  width: 11px;
+  height: 11px;
+  touch-action: none;
+  background: linear-gradient(var(--sel), var(--sel)) center / 4px 4px no-repeat;
+}
+.pt-handle[data-pt-handle='e'] {
+  left: 100%;
+  top: calc(50% - 5px);
+  cursor: ew-resize;
+}
+.pt-handle[data-pt-handle='s'] {
+  top: 100%;
+  left: calc(50% - 5px);
+  cursor: ns-resize;
+}
+.pt-handle[data-pt-handle='se'] {
+  left: 100%;
+  top: 100%;
+  cursor: nwse-resize;
+}
+@media (pointer: coarse) {
+  .pt-handle {
+    width: 24px;
+    height: 24px;
+    margin: -6px 0 0 -6px;
+  }
+}
+.pt-ghost {
+  position: absolute;
+  left: 0;
+  top: 0;
+  outline: 1px dashed var(--dark);
+  pointer-events: none;
+}
+.pt-colors {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+}
+.pt-current {
+  position: relative;
+  flex: none;
+  width: calc(var(--pt-swatch) * 2);
+  height: calc(var(--pt-swatch) * 2);
+  background: var(--dither);
+  box-shadow: var(--sunken);
+}
+.pt-current span {
+  position: absolute;
+  width: 45%;
+  height: 45%;
+  box-shadow: var(--shallow-out), 0 0 0 1px var(--face);
+}
+.pt-fg {
+  left: 18%;
+  top: 18%;
+}
+.pt-bg {
+  right: 14%;
+  bottom: 14%;
+}
+.pt-swatches {
+  display: grid;
+  grid-template-columns: repeat(14, var(--pt-swatch));
+  grid-template-rows: repeat(2, var(--pt-swatch));
+  min-width: 0;
+}
+.pt-swatch {
+  width: var(--pt-swatch);
+  height: var(--pt-swatch);
+  padding: 2px;
+  background: var(--c) content-box;
+  box-shadow: var(--sunken);
+}
+.pt-swatch:focus-visible {
+  outline: 1px dotted var(--dark);
+  outline-offset: -1px;
+}
+.pt-status .pt-pos,
+.pt-status .pt-size {
+  flex: none;
+  width: 9ch;
+  font-variant-numeric: tabular-nums;
+}
+.paint {
+  --pt-tool: 25px;
+  --pt-swatch: 16px;
+}
+@media (pointer: coarse) {
+  .paint {
+    --pt-tool: 36px;
+    --pt-swatch: 21px;
+  }
+}
+@media (max-width: 26rem) {
+  .paint {
+    --pt-swatch: 19px;
+  }
+}
+.pt-dialog[open] {
+  width: min(360px, calc(100vw - 16px));
+}
+.pt-ask {
+  padding: 6px 4px;
+}
+.pt-form {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px 10px;
+}
+.pt-radios {
+  display: grid;
+  gap: 6px;
+}
+.pt-about {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.pt-about img {
+  width: 32px;
+  height: 32px;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,5 +1,5 @@
 # Icons on the Desktop page (/desktop/), top to bottom, then the next column.
-#   app:  opens that window (about, mail, media, recycle, datetime)
+#   app:  opens that window (about, mail, media, paint, recycle, datetime)
 #   href: opens a link instead; links get the little shortcut arrow
 #   icon: a drawing from src/lib/pixel.ts
 - id: about
@@ -29,6 +29,11 @@
   icon: media
   app: media
   order: 50
+- id: paint
+  label: Paint
+  icon: paint
+  app: paint
+  order: 55
 - id: cv
   label: CV
   icon: document

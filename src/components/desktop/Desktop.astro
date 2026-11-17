@@ -21,11 +21,12 @@ import MenuList from './MenuList.astro';
 import About from './apps/About.astro';
 import Mail from './apps/Mail.astro';
 import MediaPlayer from './apps/MediaPlayer.astro';
+import Paint from './apps/Paint.astro';
 import RecycleBin from './apps/RecycleBin.astro';
 import DateTime from './apps/DateTime.astro';
 import ShutDown from './apps/ShutDown.astro';
 
-const APPS = ['about', 'mail', 'media', 'recycle', 'datetime'];
+const APPS = ['about', 'mail', 'media', 'paint', 'recycle', 'datetime'];
 
 const icons = (await getCollection('desktop', (e) => !e.data.draft)).sort((a, b) => a.data.order - b.data.order);
 for (const i of icons) {
@@ -38,7 +39,7 @@ for (const i of icons) {
 <div class="screen">
   <main class="desktop" data-desktop>
     <div class="wallpaper" aria-hidden="true">
-      <Picture src={wallpaper} alt="" formats={['avif', 'webp']} widths={[960, 1440, 1920, 2560, 3000]} sizes="100vw" loading="eager" fetchpriority="high" />
+      <Picture src={wallpaper} alt="" formats={['avif', 'webp']} widths={[960, 1440, 1920, 2560, 3000]} sizes="max(100vw, 150vh)" loading="eager" fetchpriority="high" />
     </div>
     <h1 class="sr-only">Desktop</h1>
     <ul class="icons" role="list" aria-label="Desktop icons">
@@ -65,6 +66,7 @@ for (const i of icons) {
     <About />
     <Mail />
     <MediaPlayer />
+    <Paint />
     <RecycleBin />
     <DateTime />
   </main>

@@ -5,8 +5,19 @@ export function initApps(wm: WM) {
   notepad();
   mail();
   media(wm);
+  paint(wm);
   datetime(wm);
   shutdown();
+}
+
+/* ── Paint: its code loads the first time the window opens ────── */
+function paint(wm: WM) {
+  if (!wm.has('paint')) return;
+  wm.hook('paint', {
+    onOpen: () => {
+      import('./paint/paint').then((m) => m.openPaint(wm));
+    },
+  });
 }
 
 const onMenu = (el: HTMLElement, fn: (action: string) => void) =>

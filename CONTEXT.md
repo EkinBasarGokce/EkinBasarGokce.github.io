@@ -81,7 +81,7 @@ A Page styled as a small Windows 98-style computer: icons, windows, a taskbar wi
 _Avoid_: playground, OS page, easter egg
 
 **App**:
-A program on the Desktop that opens in its own Window: Notepad (About), Mail, Media Player (Eksi's videos), Recycle Bin, Date/Time Properties, and Paint (to come). A Desktop icon opens either an App or a link.
+A program on the Desktop that opens in its own Window: Notepad (About), Mail, Media Player (Eksi's videos), Recycle Bin, Date/Time Properties and Paint. A Desktop icon opens either an App or a link.
 _Avoid_: widget, tool
 
 **Window**:

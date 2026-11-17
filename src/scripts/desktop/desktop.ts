@@ -20,7 +20,8 @@ function icons(wm: WM) {
   const all = [...list.querySelectorAll<HTMLAnchorElement>('[data-icon]')];
   const item = (a: HTMLElement) => a.parentElement as HTMLElement;
   let pointer = 'mouse';
-  let justDragged = false;
+  let justDragged = false; // swallows the click that ends a drag
+  let dragged = false; // and the double-click that may follow it
 
   const select = (a: HTMLElement | null) => all.forEach((i) => i.toggleAttribute('data-selected', i === a));
   const activate = (a: HTMLAnchorElement) => {
@@ -54,12 +55,16 @@ function icons(wm: WM) {
   const grid = () => {
     const cell = parseFloat(getComputedStyle(list).getPropertyValue('--cell')) || 75;
     const [x0, y0] = narrow() ? [4, 6] : [2, 2];
+    // the exact size, as the CSS grid sees it (clientWidth/Height are rounded)
+    const s = getComputedStyle(wm.desk);
+    const W = parseFloat(s.width) || wm.desk.clientWidth;
+    const H = parseFloat(s.height) || wm.desk.clientHeight;
     return {
       cell,
       x0,
       y0,
-      cols: Math.max(1, Math.floor((wm.desk.clientWidth - 2 * x0) / cell)),
-      rows: Math.max(1, Math.floor((wm.desk.clientHeight - 2 * y0) / cell)),
+      cols: Math.max(1, Math.floor((W - 2 * x0) / cell + 1e-6)),
+      rows: Math.max(1, Math.floor((H - 2 * y0) / cell + 1e-6)),
     };
   };
   type Grid = ReturnType<typeof grid>;
@@ -134,7 +139,15 @@ function icons(wm: WM) {
     const c = taken.has(cellKey(want)) ? nearestFree(want, g, taken) : want;
     now = { ...now, [id]: c };
     place(a, c, g);
-    prefs = { ...now };
+    // save where everything is now, except icons pushed aside only because
+    // their saved place is off this (smaller) screen: they keep that place
+    prefs = Object.fromEntries(
+      all.map((b) => {
+        const k = b.dataset.icon!;
+        const p = prefs[k];
+        return [k, k !== id && Array.isArray(p) && !inside(p, g) ? p : now[k]];
+      }),
+    );
     save(prefs);
   };
 
@@ -154,6 +167,7 @@ function icons(wm: WM) {
     a.addEventListener('pointerdown', (e) => {
       pointer = e.pointerType;
       justDragged = false;
+      dragged = false;
       select(a);
       if (e.button !== 0) return;
       const li = item(a);
@@ -172,6 +186,7 @@ function icons(wm: WM) {
           if (Math.hypot(dx, dy) < (m.pointerType === 'mouse' ? 4 : 10)) return;
           moving = true;
           li.classList.add('dragging');
+          li.style.zIndex = '2147483000'; // above every window while it moves
         }
         li.style.left = px(clamp(ox + dx / z, 0, wm.desk.clientWidth - li.offsetWidth));
         li.style.top = px(clamp(oy + dy / z, 0, wm.desk.clientHeight - li.offsetHeight));
@@ -182,7 +197,9 @@ function icons(wm: WM) {
         a.removeEventListener('pointercancel', end);
         if (!moving) return;
         li.classList.remove('dragging');
+        li.style.zIndex = '';
         justDragged = true;
+        dragged = true;
         if (u.type === 'pointercancel') layout(); // put it back
         else drop(a);
       };
@@ -205,7 +222,7 @@ function icons(wm: WM) {
     });
     a.addEventListener('dblclick', (e) => {
       e.preventDefault();
-      if (pointer === 'mouse') activate(a);
+      if (pointer === 'mouse' && !dragged) activate(a);
     });
     a.addEventListener('keydown', (e) => {
       const dir = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }[e.key];
@@ -248,6 +265,7 @@ function icons(wm: WM) {
     menu.showPopover();
     menu.style.left = px(Math.max(0, Math.min(e.clientX / z, innerWidth / z - menu.offsetWidth - 2)));
     menu.style.top = px(Math.max(0, Math.min(e.clientY / z, innerHeight / z - menu.offsetHeight - 2)));
+    menu.querySelector<HTMLElement>('.mi')?.focus({ preventScroll: true }); // arrows, Enter and Esc work at once
   });
   menu.addEventListener('menu', (e) => {
     const action = (e as CustomEvent<string>).detail;
