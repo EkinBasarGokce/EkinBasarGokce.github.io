@@ -1,0 +1,38 @@
+/*
+ * Select and Free-Form Select (tools/select.ts): two layers in core.overlay,
+ * each with exactly the picture's box so they line up with its pixels.
+ */
+.pt-sel-float,
+.pt-sel-ants {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+/* the floating pixels, at their place in a picture-sized canvas (not the
+   white, always-shown look of `.pt-paper canvas`, which is the picture's) */
+.pt-overlay .pt-sel-float {
+  display: block;
+  background: none;
+  image-rendering: pixelated;
+}
+.pt-overlay .pt-sel-float[hidden] {
+  display: none;
+}
+/* the marquee: black dashes on white, one screen pixel just outside the
+   selection (select.ts places it and clips it to the picture) */
+.pt-sel-ants {
+  overflow: visible;
+  shape-rendering: crispEdges;
+}
+.pt-sel-ants path {
+  fill: none;
+}
+.pt-sel-under {
+  stroke: #fff;
+}
+.pt-sel-over {
+  stroke: #000;
+}
