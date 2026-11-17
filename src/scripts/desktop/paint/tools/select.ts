@@ -265,7 +265,9 @@ export function install(core: Core) {
   let newestDone = false; // the newest write has settled
   let lastFailed = false; // the newest write failed or was never possible
   /** the images Paint has put (or tried to put) on the system clipboard, newest last */
-  const written: R.Bitmap[] = [];
+  const written: { img: R.Bitmap; pending: boolean }[] = [];
+  /** an image from elsewhere that Paint already judged older than its own copy */
+  let olderForeign: R.Bitmap | null = null;
   /** the visitor left the page after Paint's last copy (they may have copied something elsewhere) */
   let leftSinceCopy = false;
   window.addEventListener('blur', () => (leftSinceCopy = true));
@@ -654,13 +656,17 @@ export function install(core: Core) {
     newestDone = false;
     lastFailed = true; // until this write succeeds
     leftSinceCopy = false;
-    written.push(img);
-    if (written.length > 4) written.shift();
+    olderForeign = null;
+    const entry = { img, pending: true };
+    written.push(entry);
+    // keep every write still in flight, and at most two settled ones
+    while (written.filter((w) => !w.pending).length > 2) written.splice(written.findIndex((w) => !w.pending), 1);
     try {
       if (typeof ClipboardItem === 'function' && navigator.clipboard?.write) {
         writing = true;
         navigator.clipboard.write([new ClipboardItem({ 'image/png': core.toPng(img) })]).then(
           () => {
+            entry.pending = false;
             if (id !== writeId) {
               // an older, slower write landed after the newest one: the
               // system clipboard now holds the older image
@@ -673,6 +679,7 @@ export function install(core: Core) {
             sysStale = false;
           },
           () => {
+            entry.pending = false;
             if (id !== writeId) return;
             writing = false;
             newestDone = true;
@@ -684,12 +691,11 @@ export function install(core: Core) {
     }
     return true;
   }
-  /** two images are the same picture (size, and every opaque pixel, sampled) */
+  /** two images are the same picture (size, and every opaque pixel) */
   const same = (a: R.Bitmap, b: R.Bitmap) => {
     if (a.w !== b.w || a.h !== b.h) return false;
     const n = a.data.length;
-    const step = Math.max(1, Math.floor(n / 4096));
-    for (let i = 0; i < n; i += step) {
+    for (let i = 0; i < n; i++) {
       const p = a.data[i] >>> 0;
       const q = b.data[i] >>> 0;
       if (p >>> 24 === 0xff || q >>> 24 === 0xff ? p !== q : p >>> 24 !== q >>> 24) return false;
@@ -704,9 +710,14 @@ export function install(core: Core) {
     if (!clip) return sys;
     if (!sys || same(sys, clip)) return R.cloneBitmap(clip);
     // one of Paint's own older copies that landed late: stale
-    if (written.some((w) => w !== clip && same(sys, w))) return R.cloneBitmap(clip);
+    if (written.some((w) => w.img !== clip && same(sys, w.img))) return R.cloneBitmap(clip);
+    // an image from elsewhere already judged older than Paint's copy stays older
+    if (olderForeign && same(sys, olderForeign)) return R.cloneBitmap(clip);
     // something copied elsewhere: newer only if it could have been copied after Paint's copy
-    if (writing || (lastFailed && !leftSinceCopy) || (sysStale && !leftSinceCopy)) return R.cloneBitmap(clip);
+    if (writing || (lastFailed && !leftSinceCopy) || (sysStale && !leftSinceCopy)) {
+      olderForeign = sys;
+      return R.cloneBitmap(clip);
+    }
     return sys;
   }
   /** an image file or blob to a floating bitmap (scaled to fit MAX_SIDE), or null */

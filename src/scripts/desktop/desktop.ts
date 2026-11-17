@@ -268,8 +268,13 @@ function icons(wm: WM) {
     menu.style.top = px(Math.max(0, Math.min(clientY / z, innerHeight / z - menu.offsetHeight - 2)));
     if (focus) menu.querySelector<HTMLElement>('.mi')?.focus({ preventScroll: true }); // arrows, Enter and Esc work at once
   };
+  menu.addEventListener('contextmenu', (e) => e.preventDefault());
   wm.desk.addEventListener('contextmenu', (e) => {
-    if (!isBackground(e.target as HTMLElement)) return; // icons and windows keep the browser's own menu
+    if (!isBackground(e.target as HTMLElement)) {
+      // icons and windows keep the browser's own menu; ours goes away
+      if (menu.matches(':popover-open')) menu.hidePopover();
+      return;
+    }
     e.preventDefault();
     openMenuAt(e.clientX, e.clientY, true);
   });

@@ -75,7 +75,8 @@ export function install(core: Core) {
     const frame = core.overlay.querySelector<HTMLElement>('.pt-textframe');
     if (frame && frame.getClientRects().length && core.currentTool() === 'text') {
       const r = frame.getBoundingClientRect();
-      const p = core.toPixel({ clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 });
+      // the start of the box, where the text and the caret are, even if the box is wider than the view
+      const p = core.toPixel({ clientX: r.left + Math.min(r.width / 2, 60), clientY: r.top + Math.min(r.height / 2, 30) });
       return { x: clamp(p.x, 0, bm.w - 1), y: clamp(p.y, 0, bm.h - 1) };
     }
     const z = core.zoom();

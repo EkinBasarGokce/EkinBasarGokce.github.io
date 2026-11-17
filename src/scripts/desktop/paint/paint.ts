@@ -530,7 +530,7 @@ function setup(wm: WM) {
   // As in 98, clicking a tool, an option or a colour leaves the keyboard on the
   // picture (Esc / Enter still reach a shape in progress); Tab still reaches them.
   win.addEventListener('pointerdown', (e) => {
-    if (e.pointerType === 'mouse' && (e.target as HTMLElement).closest('.pt-tool, .pt-opt, .pt-swatch')) e.preventDefault();
+    if (e.pointerType !== 'touch' && (e.target as HTMLElement).closest('.pt-tool, .pt-opt, .pt-swatch')) e.preventDefault();
   });
   toolButtons.forEach((b, i) => {
     b.addEventListener('click', () => setTool(b.dataset.tool as ToolId));
@@ -541,6 +541,10 @@ function setup(wm: WM) {
       helpLine.textContent = tools.get(b.dataset.tool as ToolId)?.help ?? '';
     });
     b.addEventListener('mouseleave', () => (helpLine.textContent = saved || (tool()?.help ?? '')));
+    // a new tool was chosen: leaving shows its help (re-clicking a tool mid-shape keeps the shape's hint)
+    b.addEventListener('click', () => {
+      if (!tool()?.busy?.()) saved = '';
+    });
     b.addEventListener('keydown', (e) => {
       const d = { ArrowDown: 2, ArrowUp: -2, ArrowRight: 1, ArrowLeft: -1 }[e.key];
       if (!d) return;
@@ -592,8 +596,11 @@ function setup(wm: WM) {
     return grid;
   }
   function drawOptions() {
+    const hadFocus = optionsBox.contains(document.activeElement);
     optionsBox.replaceChildren();
     tool()?.options?.(optionsBox);
+    // the focused option button was just replaced: keep the keyboard in Paint
+    if (hadFocus && !win.contains(document.activeElement)) canvas.focus({ preventScroll: true });
   }
 
   // ── Colours ──────────────────────────────────────────────────────

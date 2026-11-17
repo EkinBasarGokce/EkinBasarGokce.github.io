@@ -14,6 +14,7 @@ const topButtons = (bar: Element) => [...bar.querySelectorAll<HTMLElement>(':sco
 export function initMenus() {
   let open: HTMLElement | null = null; // the .mb whose drop-down is showing
   let returnTo: HTMLElement | null = null; // what had the keyboard when it opened
+  let swallowClick = false;
 
   const close = (focusButton = false) => {
     if (!open) return;
@@ -26,12 +27,17 @@ export function initMenus() {
     returnTo = null;
     if (!focusButton) return;
     // back to the text or picture the menu was opened from, else the menu title
-    if (back && back !== btn && back.isConnected && back !== document.body) back.focus({ preventScroll: true });
+    const usable = back && back !== btn && back.isConnected && back !== document.body && !back.closest('.menu') && back.getClientRects().length > 0;
+    if (usable) back!.focus({ preventScroll: true });
     else btn.focus();
   };
   const show = (mb: HTMLElement, focusFirst = false) => {
-    if (open && open !== mb) close();
-    if (!open) returnTo = document.activeElement as HTMLElement | null;
+    if (open && open !== mb) {
+      // moving to the next menu along the bar: keep where the keyboard came from
+      const keep = returnTo;
+      close();
+      returnTo = keep;
+    } else if (!open) returnTo = document.activeElement as HTMLElement | null;
     open = mb;
     mb.setAttribute('data-open', '');
     mb.querySelector(':scope > .mb-btn')!.setAttribute('aria-expanded', 'true');
@@ -52,12 +58,24 @@ export function initMenus() {
       }
       // a mouse press on a menu item doesn't move the keyboard either
       if (e.pointerType === 'mouse' && t.closest('.mi')) e.preventDefault();
+      swallowClick = false;
       if (open && !open.contains(t)) {
-        // as in 98, a press outside an open menu only closes it
+        // as in 98, a press outside an open menu only closes it (and its click does nothing)
         close();
         e.preventDefault();
         e.stopPropagation();
+        swallowClick = true;
       }
+    },
+    true,
+  );
+  document.addEventListener(
+    'click',
+    (e) => {
+      if (!swallowClick) return;
+      swallowClick = false;
+      e.preventDefault();
+      e.stopPropagation();
     },
     true,
   );
