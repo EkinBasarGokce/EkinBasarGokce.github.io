@@ -84,7 +84,17 @@ Visitors can drag icons anywhere. Their arrangement is kept in their own browser
 
 The wallpaper (`src/assets/desktop/wallpaper.jpg`) is a photo by Se. Tsuchiya on Unsplash (https://unsplash.com/photos/SVVKbAy5CDc), used under the Unsplash License. To change it, replace that file.
 
-**Paint** (`src/components/desktop/apps/Paint.astro`, `src/scripts/desktop/paint/`) draws its own hard-edged pixels in `raster.ts`, the pixel engine, rather than using the browser's smoothed drawing. `npm test` runs the engine's tests; CI runs them before every build. `paint.ts` runs the tools, undo, files, dialogs and autosave. Paint's code loads only the first time the window opens. Drawings stay in the visitor's browser: Save downloads a PNG or BMP, and an open picture is kept in local storage until Paint is closed.
+**Paint** (`src/components/desktop/apps/Paint.astro`, `src/scripts/desktop/paint/`) has all 16 Windows 98 tools and its menus. It draws its own hard-edged pixels in `raster.ts`, the pixel engine, rather than using the browser's smoothed drawing.
+- **How it is built:** `paint.ts` is the core: the picture, undo, files, autosave, dialogs, zoom and menus. Every tool or feature is a module that codes against the contract in `core.ts`. Any file in `paint/tools/` or `paint/extras/` that exports `install(core)` is loaded automatically.
+  - `tools/basic.ts`: pencil, brush, eraser, fill, pick, airbrush, line and the shapes.
+  - `select.ts`: Select, Free-Form Select and the clipboard.
+  - `magnifier.ts`: the magnifier, zoom, grid and View Bitmap.
+  - `text.ts`, and `curve.ts` (Curve and Polygon).
+  - `extras/`: Edit Colors, Stretch/Skew and Set As Wallpaper.
+- **To add a tool:** write a module that calls `core.addTool`. Then add its button to the `TOOLS` list in `Paint.astro` and draw its icon in `src/lib/paint-icons.ts`.
+- **Tests:** `npm test` runs the unit tests (engine, selection helpers, polygon fill), and CI runs them before every build.
+- **Privacy:** drawings stay in the visitor's browser. Save downloads a PNG or BMP, an open picture is kept in local storage until Paint is closed, and a picture set as wallpaper is kept in local storage too. "Restore Default Wallpaper" in the desktop's right-click menu removes it.
+- **Loading:** Paint's code loads only the first time the window opens.
 
 **Winamp** is [Webamp](https://github.com/captbaritone/webamp) (MIT licence), a browser rebuild of Winamp 2. The Winamp name and look belong to their owners. Its code loads the first time it opens; `src/scripts/desktop/winamp.ts` connects it to the taskbar.
 - **To add songs:** put the audio files in `public/music/` and list them in `src/content/music.yaml`, where the file has an example. Only add music you have the rights to put online.
