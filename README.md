@@ -86,6 +86,12 @@ The wallpaper (`src/assets/desktop/wallpaper.jpg`) is a photo by Se. Tsuchiya on
 
 **Paint** (`src/components/desktop/apps/Paint.astro`, `src/scripts/desktop/paint/`) draws its own hard-edged pixels in `raster.ts`, the pixel engine, rather than using the browser's smoothed drawing. `npm test` runs the engine's tests; CI runs them before every build. `paint.ts` runs the tools, undo, files, dialogs and autosave. Paint's code loads only the first time the window opens. Drawings stay in the visitor's browser: Save downloads a PNG or BMP, and an open picture is kept in local storage until Paint is closed.
 
+**Winamp** is [Webamp](https://github.com/captbaritone/webamp) (MIT licence), a browser rebuild of Winamp 2. The Winamp name and look belong to their owners. Its code loads the first time it opens; `src/scripts/desktop/winamp.ts` connects it to the taskbar.
+- **To add songs:** put the audio files in `public/music/` and list them in `src/content/music.yaml`, where the file has an example. Only add music you have the rights to put online.
+- **Playlist:** it is empty until then. Visitors can still drop their own files onto Winamp; those play only in their browser.
+
+**Spotify icon:** it is already in `src/content/desktop.yaml` (id `spotify`) and stays hidden until you set its `href` to your Spotify link and delete its `draft: true` line.
+
 The window manager (`src/scripts/desktop/wm.ts`) handles opening, dragging, resizing, minimising, the taskbar, and Back on phones. `/desktop/#mail` opens with Mail already open.
 
 ## Deploying

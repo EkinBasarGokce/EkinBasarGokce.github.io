@@ -27,13 +27,19 @@ import DateTime from './apps/DateTime.astro';
 import ShutDown from './apps/ShutDown.astro';
 
 const APPS = ['about', 'mail', 'media', 'paint', 'recycle', 'datetime'];
+/** programs that draw their own windows (scripts/desktop/winamp.ts) */
+const EXTERNAL = ['winamp'];
 
 const icons = (await getCollection('desktop', (e) => !e.data.draft)).sort((a, b) => a.data.order - b.data.order);
 for (const i of icons) {
-  if (i.data.app && !APPS.includes(i.data.app)) {
-    throw new Error(`desktop.yaml: "${i.id}" opens an unknown app "${i.data.app}". Known apps: ${APPS.join(', ')}.`);
+  if (i.data.app && !APPS.includes(i.data.app) && !EXTERNAL.includes(i.data.app)) {
+    throw new Error(`desktop.yaml: "${i.id}" opens an unknown app "${i.data.app}". Known apps: ${[...APPS, ...EXTERNAL].join(', ')}.`);
   }
 }
+const tracks = (await getCollection('music', (m) => !m.data.draft))
+  .sort((a, b) => a.data.order - b.data.order)
+  .map(({ data: m }) => ({ url: m.src, title: m.title, artist: m.artist, duration: m.duration }));
+const hasWinamp = icons.some((i) => i.data.app === 'winamp');
 ---
 
 <div class="screen">
@@ -73,8 +79,9 @@ for (const i of icons) {
   <Taskbar />
 </div>
 
-<StartMenu />
+<StartMenu winamp={hasWinamp} />
 <ShutDown />
+{hasWinamp && <script is:inline type="application/json" id="winamp-tracks" data-task-icon={iconUri('winamp')} set:html={JSON.stringify(tracks).replace(/</g, '\\u003c')} />}
 
 <!-- right-click on the empty desktop -->
 <div id="desk-menu" class="ctx-menu" popover>

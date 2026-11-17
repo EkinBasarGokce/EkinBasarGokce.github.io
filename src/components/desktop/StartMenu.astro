@@ -4,6 +4,12 @@ import MenuList from './MenuList.astro';
 import type { MenuEntry } from './types';
 import { site } from '../../site';
 
+interface Props {
+  /** list Winamp under Programs (only when its desktop icon exists) */
+  winamp?: boolean;
+}
+const { winamp = false } = Astro.props;
+
 const entries: MenuEntry[] = [
   {
     label: '&Programs',
@@ -13,6 +19,7 @@ const entries: MenuEntry[] = [
       { label: 'Media &Player', icon: 'media', open: 'media' },
       { label: '&Notepad', icon: 'notepad', open: 'about' },
       { label: 'P&aint', icon: 'paint', open: 'paint' },
+      ...(winamp ? [{ label: '&Winamp', icon: 'winamp' as const, open: 'winamp' }] : []),
     ],
   },
   {

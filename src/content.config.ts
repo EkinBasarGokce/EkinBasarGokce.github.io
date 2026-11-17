@@ -9,6 +9,8 @@
  *                                             (+ optional caption in photos.yaml)
  *   Add a home section                     -> add one .md file in sections/
  *   Add an icon to the Desktop page        -> add one entry in desktop.yaml
+ *   Add a song to Winamp (Desktop page)    -> put the file in public/music/,
+ *                                             then one entry in music.yaml
  */
 import { defineCollection } from 'astro:content';
 import { glob, file } from 'astro/loaders';
@@ -239,6 +241,21 @@ const desktop = defineCollection({
     .refine((d) => !!d.app !== !!d.href, { message: 'give exactly one of `app` or `href`' }),
 });
 
+/** Songs in Winamp on the Desktop page, in playlist order. */
+const music = defineCollection({
+  loader: file('src/content/music.yaml'),
+  schema: z.object({
+    title: z.string(),
+    artist: z.string().optional(),
+    /** a file in public/music/ ("/music/song.mp3") or a full URL that allows cross-origin use */
+    src: z.string().refine((s) => s.startsWith('/') || /^https:\/\//.test(s), 'use /music/<file> or a full https:// URL'),
+    /** length in seconds, shown before the file loads (optional) */
+    duration: z.number().positive().optional(),
+    order: z.number().default(0),
+    draft: z.boolean().default(false),
+  }),
+});
+
 export const collections = {
   experience,
   education,
@@ -252,4 +269,5 @@ export const collections = {
   sections,
   notes,
   desktop,
+  music,
 };

@@ -70,10 +70,22 @@
   body {
     zoom: 1.25;
   }
+  /* Webamp does its own pointer maths: undo the zoom for it (it has its own
+     double-size mode for the bigger look, see scripts/desktop/winamp.ts) */
+  #webamp,
+  #webamp-context-menu,
+  .winamp-anchor {
+    zoom: 0.8;
+  }
 }
 @media (pointer: fine) and (min-width: 1000px) and (min-height: 640px) {
   body {
     zoom: 1.5;
+  }
+  #webamp,
+  #webamp-context-menu,
+  .winamp-anchor {
+    zoom: 0.666667;
   }
 }
 
@@ -975,6 +987,18 @@ dialog.win::backdrop {
   bottom: -3px;
 }
 
+/* the empty layer Webamp mounts into and centres its windows over */
+.winamp-anchor {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* Winamp's own controls, when reached with the keyboard */
+#webamp :focus-visible {
+  outline: 1px dotted #fff;
+  outline-offset: -1px;
+}
+
 /* ── Desktop right-click menu ─────────────────────────────────── */
 .ctx-menu {
   position: fixed;
@@ -994,7 +1018,7 @@ dialog.win::backdrop {
 .off {
   position: fixed;
   inset: 0;
-  z-index: 10;
+  z-index: 2147483647; /* above Winamp too */
   display: grid;
   place-items: center;
   padding: 24px;

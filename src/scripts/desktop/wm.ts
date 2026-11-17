@@ -14,6 +14,8 @@ type Hooks = {
 };
 
 export const px = (n: number) => `${Math.round(n)}px`;
+/** a pendingBack marker: step back over an entry, close nothing */
+const SILENT = '\u0000silent';
 export const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
 
 /**
@@ -39,6 +41,10 @@ export class WM {
   private cascade = 0;
   private pendingBack: string | null = null;
   private tasks: HTMLElement;
+  /** programs that draw their own windows (Winamp) */
+  private externals = new Map<string, { open: () => void; back?: () => boolean }>();
+  private externalClicks = new Map<string, () => void>();
+  private activeExternal: string | null = null;
 
   constructor() {
     this.desk = document.querySelector<HTMLElement>('[data-desktop]')!;
@@ -52,6 +58,7 @@ export class WM {
       const b = (e.target as HTMLElement).closest<HTMLElement>('[data-task]');
       if (!b) return;
       const id = b.dataset.task!;
+      if (b.hasAttribute('data-external')) return void this.externalClicks.get(id)?.();
       const el = this.wins.get(id)!;
       if (this.activeId === id && !el.hasAttribute('data-min')) this.minimize(id);
       else {
@@ -78,10 +85,70 @@ export class WM {
     this.hooks.set(id, { ...this.hooks.get(id), ...h });
   }
 
+  /**
+   * A program that draws its own windows: open(id) calls `open`; `back`, if
+   * given, may handle the phone Back button (return true when it did).
+   */
+  external(id: string, handlers: { open: () => void; back?: () => boolean }) {
+    this.externals.set(id, handlers);
+  }
+  /** the next stacking level, shared by our windows and external programs */
+  bump() {
+    return ++this.z;
+  }
+  /** an external program came to the front: no window of ours is active */
+  activateExternal(id: string) {
+    this.deactivate();
+    this.activeExternal = id;
+    this.setTaskPressed(id, true);
+  }
+  isExternalActive(id: string) {
+    return this.activeExternal === id;
+  }
+  /** step back over a history entry without closing anything */
+  backSilently() {
+    this.pendingBack = SILENT;
+    history.back();
+  }
+
+  /** A taskbar button for an external program; clicking it calls onClick. */
+  addExternalTask(id: string, title: string, iconSrc: string, onClick: () => void) {
+    this.removeTask(id);
+    this.externalClicks.set(id, onClick);
+    const li = document.createElement('li');
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'task';
+    b.dataset.task = id;
+    b.setAttribute('data-external', '');
+    b.title = title;
+    b.setAttribute('aria-pressed', 'true');
+    const icon = document.createElement('img');
+    icon.src = iconSrc;
+    icon.width = 16;
+    icon.height = 16;
+    icon.alt = '';
+    const label = document.createElement('span');
+    label.textContent = title;
+    b.append(icon, label);
+    li.append(b);
+    this.tasks.append(li);
+  }
+  removeTask(id: string) {
+    this.tasks.querySelector(`[data-task="${id}"]`)?.parentElement?.remove();
+    this.externalClicks.delete(id);
+  }
+  setTaskPressed(id: string, pressed: boolean) {
+    this.tasks.querySelector(`[data-task="${id}"]`)?.setAttribute('aria-pressed', String(pressed));
+  }
+
   /** Open a window, or bring it back if it is already open. */
   open(id: string, from?: HTMLElement | null, opts: { initial?: boolean } = {}) {
     const el = this.wins.get(id);
-    if (!el) return;
+    if (!el) {
+      this.externals.get(id)?.open();
+      return;
+    }
     if (from) this.returnTo.set(id, from);
     if (el.hasAttribute('data-open')) {
       el.removeAttribute('data-min');
@@ -105,6 +172,10 @@ export class WM {
   /** Bring a window to the front and make it the active one. */
   focus(id: string, moveFocus = false) {
     const el = this.wins.get(id)!;
+    if (this.activeExternal) {
+      this.setTaskPressed(this.activeExternal, false);
+      this.activeExternal = null;
+    }
     el.style.zIndex = String(++this.z);
     this.order = this.order.filter((x) => x !== id).concat(id);
     this.activeId = id;
@@ -119,6 +190,10 @@ export class WM {
 
   /** Click on the empty desktop: no window is active. */
   deactivate() {
+    if (this.activeExternal) {
+      this.setTaskPressed(this.activeExternal, false);
+      this.activeExternal = null;
+    }
     this.activeId = null;
     for (const w of this.wins.values()) w.removeAttribute('data-active');
     this.syncTasks();
@@ -166,7 +241,7 @@ export class WM {
   /** Open the window named in the address, e.g. /desktop/#mail. */
   openFromHash() {
     const id = decodeURIComponent(location.hash.slice(1));
-    if (id && this.wins.has(id)) this.open(id, null, { initial: true });
+    if (id && (this.wins.has(id) || this.externals.has(id))) this.open(id, null, { initial: true });
   }
 
   setTitle(id: string, text: string) {
@@ -193,10 +268,12 @@ export class WM {
     if (this.pendingBack) {
       const id = this.pendingBack;
       this.pendingBack = null;
-      this.finishClose(id);
+      if (id !== SILENT) this.finishClose(id);
       return;
     }
-    // the visitor pressed Back: close the window on top
+    // the visitor pressed Back: an external program may take it (Winamp hides)...
+    for (const ext of this.externals.values()) if (ext.back?.()) return;
+    // ...otherwise close the window on top
     const top = this.top();
     if (!top) return;
     const before = this.hooks.get(top)?.beforeClose;
@@ -296,7 +373,7 @@ export class WM {
   }
 
   private syncTasks() {
-    this.tasks.querySelectorAll<HTMLElement>('[data-task]').forEach((b) => {
+    this.tasks.querySelectorAll<HTMLElement>('[data-task]:not([data-external])').forEach((b) => {
       b.setAttribute('aria-pressed', String(b.dataset.task === this.activeId));
     });
   }

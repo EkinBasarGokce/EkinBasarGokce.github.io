@@ -1,5 +1,5 @@
 # Icons on the Desktop page (/desktop/), top to bottom, then the next column.
-#   app:  opens that window (about, mail, media, paint, recycle, datetime)
+#   app:  opens that window (about, mail, media, paint, recycle, datetime) or Winamp (winamp)
 #   href: opens a link instead; links get the little shortcut arrow
 #   icon: a drawing from src/lib/pixel.ts
 - id: about
@@ -29,6 +29,18 @@
   icon: media
   app: media
   order: 50
+- id: winamp
+  label: Winamp
+  icon: winamp
+  app: winamp
+  order: 52
+- id: spotify
+  label: Spotify
+  icon: spotify
+  href: "TODO: your Spotify link"
+  newTab: true
+  order: 54
+  draft: true # shows once the link above is filled in and this line is removed
 - id: paint
   label: Paint
   icon: paint

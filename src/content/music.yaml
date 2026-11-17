@@ -1,0 +1,12 @@
+# Songs in Winamp on the Desktop page (/desktop/), in playlist order.
+# Put the audio file in public/music/ and add an entry, for example:
+#
+# - id: first-song
+#   title: Song name
+#   artist: Eksi
+#   src: /music/first-song.mp3
+#   duration: 214        # seconds, optional
+#   order: 10
+#
+# Only use music you have the rights to put online.
+[]

@@ -1,11 +1,13 @@
 /** What happens inside each app window. Each app listens for its own menu actions. */
 import type { WM } from './wm';
+import { initWinamp } from './winamp';
 
 export function initApps(wm: WM) {
   notepad();
   mail();
   media(wm);
   paint(wm);
+  initWinamp(wm);
   datetime(wm);
   shutdown();
 }
