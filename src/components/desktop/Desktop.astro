@@ -1,0 +1,75 @@
+---
+/**
+ * The Desktop page: icons from src/content/desktop.yaml on a teal desktop,
+ * the app windows, the taskbar and the Start menu.
+ *
+ * Add a link icon: one entry in desktop.yaml.
+ * Add an app: a component in ./apps/ (a <Window id="...">), render it below,
+ * add its id to APPS, then point an icon at it with `app: id`.
+ */
+import { getCollection } from 'astro:content';
+import { iconUri } from '../../lib/pixel';
+import Taskbar from './Taskbar.astro';
+import StartMenu from './StartMenu.astro';
+import About from './apps/About.astro';
+import Mail from './apps/Mail.astro';
+import MediaPlayer from './apps/MediaPlayer.astro';
+import RecycleBin from './apps/RecycleBin.astro';
+import DateTime from './apps/DateTime.astro';
+import ShutDown from './apps/ShutDown.astro';
+
+const APPS = ['about', 'mail', 'media', 'recycle', 'datetime'];
+
+const icons = (await getCollection('desktop', (e) => !e.data.draft)).sort((a, b) => a.data.order - b.data.order);
+for (const i of icons) {
+  if (i.data.app && !APPS.includes(i.data.app)) {
+    throw new Error(`desktop.yaml: "${i.id}" opens an unknown app "${i.data.app}". Known apps: ${APPS.join(', ')}.`);
+  }
+}
+---
+
+<div class="screen">
+  <main class="desktop" data-desktop>
+    <h1 class="sr-only">Desktop</h1>
+    <ul class="icons" role="list" aria-label="Desktop icons">
+      {
+        icons.map(({ data: d }) => (
+          <li>
+            <a
+              class="icon"
+              href={d.app ? `#${d.app}` : d.href}
+              target={d.newTab ? '_blank' : undefined}
+              rel={d.newTab ? 'noopener' : undefined}
+              data-icon
+              data-open={d.app}
+            >
+              <img src={iconUri(d.icon, { shortcut: !!d.href })} width="32" height="32" alt="" />
+              <span>{d.label}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+
+    <About />
+    <Mail />
+    <MediaPlayer />
+    <RecycleBin />
+    <DateTime />
+  </main>
+  <Taskbar />
+</div>
+
+<StartMenu />
+<ShutDown />
+
+<!-- a selected icon is tinted navy, like the real thing -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="selected" color-interpolation-filters="sRGB">
+    <feColorMatrix type="matrix" values="0.5 0 0 0 0  0 0.5 0 0 0  0 0 0.5 0 0.25  0 0 0 1 0" />
+  </filter>
+</svg>
+
+<script>
+  import '../../scripts/desktop/main';
+</script>

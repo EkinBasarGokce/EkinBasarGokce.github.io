@@ -32,6 +32,8 @@ npm run todo     # lists every placeholder still to fill in
 | A note | one Markdown file in `src/content/notes/` |
 | CV | put the PDF at `public/cv.pdf`; the links appear by themselves |
 | Colours, fonts, spacing | `src/styles/tokens.css` |
+| Icons on the Desktop page | `src/content/desktop.yaml` |
+| The header link to the Desktop page | `headerLinks` in `src/site.ts` |
 
 Anything that starts with `TODO` shows as a dashed orange placeholder in the preview. Run `npm run todo` before going live.
 
@@ -69,6 +71,16 @@ It is served at `/<name>/`. To list it in the footer and the phone menu, add one
 ## Add a creative strand
 
 Create `src/content/strands/<id>.md` with `title`, `kicker`, `hue`, `order`, and optional `entries`, `links` and `media` (`photos`, `videos`, `cards`). It appears in Off the clock with its own chip.
+
+## The Desktop page
+
+`/desktop/` is a small Windows 98-style computer, reached only from the header link. It has no home section and uses its own full-screen layout (`src/layouts/Bare.astro`), with no site header or footer.
+
+- **Add a link icon:** add one entry to `src/content/desktop.yaml` with `href`. Links get the little shortcut arrow.
+- **Add an app:** make a component in `src/components/desktop/apps/` that renders a `<Window id="...">`. Render it in `Desktop.astro` and add its id to `APPS`. Then point an icon at it with `app: <id>`. Its behaviour goes in `src/scripts/desktop/apps.ts`.
+- **Add an icon drawing:** add a 16×16 text grid to `src/lib/pixel.ts`, one character per pixel.
+
+The window manager (`src/scripts/desktop/wm.ts`) handles opening, dragging, resizing, minimising, the taskbar, and Back on phones. `/desktop/#mail` opens with Mail already open.
 
 ## Deploying
 

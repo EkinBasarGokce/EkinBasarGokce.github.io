@@ -1,7 +1,8 @@
 ---
 /**
  * Sticky header. Nav items come from the home sections that have a `nav` label,
- * so adding a section with `nav: "Label"` adds it here too.
+ * so adding a section with `nav: "Label"` adds it here too. `site.headerLinks`
+ * follow them (pages with no home section, like the Desktop).
  */
 import { getCollection } from 'astro:content';
 import { site } from '../site';
@@ -29,6 +30,9 @@ const items = sections.map((s) => ({ id: s.id, label: s.data.nav!, href: `${isHo
         {items.map((it) => (
           <li><a href={it.href} data-nav-link={it.id}>{it.label}</a></li>
         ))}
+        {site.headerLinks.map((l) => (
+          <li><a href={l.href}>{l.label}</a></li>
+        ))}
       </ul>
     </nav>
 
@@ -50,6 +54,7 @@ const items = sections.map((s) => ({ id: s.id, label: s.data.nav!, href: `${isHo
     <nav aria-label="Sections">
       <ul role="list">
         {items.map((it) => <li><a href={it.href}>{it.label}</a></li>)}
+        {site.headerLinks.map((l) => <li><a href={l.href}>{l.label}</a></li>)}
         {pages.map((p) => <li class="menu-page"><a href={p.href}>{p.label}</a></li>)}
       </ul>
     </nav>

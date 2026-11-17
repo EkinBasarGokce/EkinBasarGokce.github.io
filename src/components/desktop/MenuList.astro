@@ -1,0 +1,56 @@
+---
+/** A drop-down menu (and its submenus). Behaviour lives in src/scripts/desktop/menus.ts. */
+import { iconUri } from '../../lib/pixel';
+import { accel, type MenuEntry } from './types';
+
+interface Props {
+  entries: MenuEntry[];
+  class?: string;
+  label?: string;
+}
+const { entries, class: cls = 'menu', label } = Astro.props;
+---
+
+<ul class={cls} role="menu" aria-label={label}>
+  {
+    entries.map((e) => {
+      if (e === 'sep') return <li class="mi-sep" role="separator" />;
+      const [a, k, b] = accel(e.label);
+      const tickable = e.checked !== undefined;
+      const inner = (
+        <>
+          {e.icon ? <img class="mi-icon" src={iconUri(e.icon)} width="16" height="16" alt="" /> : <span class="mi-check" />}
+          <span>
+            {a}
+            {k && <span class="u">{k}</span>}
+            {b}
+          </span>
+          {e.key ? <span class="mi-key">{e.key}</span> : <span />}
+          <span class={e.items ? 'mi-sub' : undefined} />
+        </>
+      );
+      return (
+        <li class="mi-li" role="none">
+          {e.href ? (
+            <a class="mi" role="menuitem" href={e.href} target={e.newTab ? '_blank' : undefined} rel={e.newTab ? 'noopener' : undefined}>
+              {inner}
+            </a>
+          ) : (
+            <button
+              type="button"
+              class="mi"
+              role={tickable ? 'menuitemcheckbox' : 'menuitem'}
+              aria-checked={tickable ? (e.checked ? 'true' : 'false') : undefined}
+              aria-disabled={e.disabled ? 'true' : undefined}
+              aria-haspopup={e.items ? 'menu' : undefined}
+              data-action={e.open ? `open:${e.open}` : e.action}
+            >
+              {inner}
+            </button>
+          )}
+          {e.items && <Astro.self entries={e.items} />}
+        </li>
+      );
+    })
+  }
+</ul>

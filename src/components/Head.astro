@@ -1,0 +1,38 @@
+---
+/** The <head> tags every page shares: title, description, favicons, share card. */
+import { site } from '../site';
+
+interface Props {
+  /** page title; the home page passes nothing and gets the full site title */
+  title?: string;
+  description?: string;
+  /** full-screen pages draw under phone notches and home bars */
+  cover?: boolean;
+}
+const { title, description = site.description, cover = false } = Astro.props;
+const fullTitle = title ? `${title} · ${site.name}` : site.title;
+const canonical = new URL(Astro.url.pathname, Astro.site).href;
+const ogImage = new URL('/og.jpg', Astro.site).href;
+const isHome = Astro.url.pathname === '/';
+---
+
+<meta charset="utf-8" />
+<meta name="viewport" content={`width=device-width, initial-scale=1${cover ? ', viewport-fit=cover' : ''}`} />
+<title>{fullTitle}</title>
+<meta name="description" content={description} />
+<link rel="canonical" href={canonical} />
+<!-- favicon: a fixed face (seed 4717) from the same sketch engine as the hero -->
+<link rel="icon" href="/favicon.ico" sizes="16x16 32x32 48x48" />
+<link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+<link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+<meta property="og:type" content={isHome ? 'profile' : 'website'} />
+<meta property="og:site_name" content={site.name} />
+<meta property="og:title" content={fullTitle} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={canonical} />
+<meta property="og:image" content={ogImage} />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta name="twitter:card" content="summary_large_image" />

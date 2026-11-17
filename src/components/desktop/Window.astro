@@ -1,0 +1,93 @@
+---
+/**
+ * A window on the Desktop: title bar (icon, title, minimise, maximise, close),
+ * an optional menu bar, the app inside, and an optional status bar
+ * (slot="status"). The window manager (src/scripts/desktop/wm.ts) does the rest.
+ */
+import { iconUri, glyphUri, type IconName } from '../../lib/pixel';
+import MenuList from './MenuList.astro';
+import { accel, type Menu } from './types';
+
+interface Props {
+  /** also its address: /desktop/#id opens it */
+  id: string;
+  title: string;
+  icon: IconName;
+  /** starting size in pixels; leave out h to fit the content */
+  w: number;
+  h?: number;
+  minW?: number;
+  minH?: number;
+  /** a dialog: centred, fixed size, only a close button, Esc closes it */
+  dialog?: boolean;
+  menus?: Menu[];
+  class?: string;
+}
+const { id, title, icon, w, h, minW = 220, minH = 140, dialog = false, menus = [], class: cls } = Astro.props;
+const resizable = !dialog;
+---
+
+<section
+  id={id}
+  class:list={['win', cls]}
+  data-window
+  data-w={w}
+  data-h={h}
+  data-minw={minW}
+  data-minh={minH}
+  data-resizable={resizable ? '' : undefined}
+  data-dialog={dialog ? '' : undefined}
+  role="dialog"
+  aria-labelledby={`${id}-title`}
+  tabindex="-1"
+>
+  <header class="title" data-drag>
+    <img class="title-icon" src={iconUri(icon)} width="16" height="16" alt="" />
+    <h2 id={`${id}-title`}>{title}</h2>
+    <div class="title-btns">
+      {
+        !dialog && (
+          <button type="button" class="tb" data-act="min" aria-label="Minimize">
+            <img src={glyphUri('min')} width="6" height="7" alt="" />
+          </button>
+        )
+      }
+      {
+        resizable && (
+          <button type="button" class="tb" data-act="max" aria-label="Maximize">
+            <img class="g-max" src={glyphUri('max')} width="9" height="8" alt="" />
+            <img class="g-restore" src={glyphUri('restore')} width="8" height="9" alt="" />
+          </button>
+        )
+      }
+      <button type="button" class="tb" data-act="close" aria-label="Close">
+        <img src={glyphUri('close')} width="8" height="7" alt="" />
+      </button>
+    </div>
+  </header>
+
+  {
+    menus.length > 0 && (
+      <div class="menubar" role="menubar" aria-label={title} data-menubar>
+        {menus.map((m) => {
+          const [a, k, b] = accel(m.label);
+          return (
+            <div class="mb">
+              <button type="button" class="mb-btn" role="menuitem" aria-haspopup="menu" aria-expanded="false">
+                {a}
+                {k && <span class="u">{k}</span>}
+                {b}
+              </button>
+              <MenuList entries={m.items} label={m.label.replace('&', '')} />
+            </div>
+          );
+        })}
+      </div>
+    )
+  }
+
+  <div class="win-body"><slot /></div>
+  <slot name="status" />
+
+  {resizable && ['n', 's', 'e', 'w', 'ne', 'nw', 'se', 'sw'].map((d) => <div class="rz" data-resize={d} aria-hidden="true" />)}
+</section>

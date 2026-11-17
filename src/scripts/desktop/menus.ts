@@ -1,0 +1,159 @@
+/**
+ * Menus, as in 98: a menu bar opens on press and follows the pointer along the
+ * bar while open; arrow keys walk the items; Esc backs out; submenus open to
+ * the side. Choosing an item sends a `menu` event (detail = its action) that
+ * bubbles up to the window, or to the Start menu.
+ */
+
+/** the items directly in one menu list */
+const itemsOf = (list: Element) =>
+  [...list.children].map((li) => li.querySelector<HTMLElement>(':scope > .mi')).filter((x): x is HTMLElement => !!x);
+
+const topButtons = (bar: Element) => [...bar.querySelectorAll<HTMLElement>(':scope > .mb > .mb-btn')];
+
+export function initMenus() {
+  let open: HTMLElement | null = null; // the .mb whose drop-down is showing
+
+  const close = (focusButton = false) => {
+    if (!open) return;
+    const btn = open.querySelector<HTMLElement>(':scope > .mb-btn')!;
+    open.removeAttribute('data-open');
+    open.querySelectorAll('[data-sub-open]').forEach((x) => x.removeAttribute('data-sub-open'));
+    btn.setAttribute('aria-expanded', 'false');
+    open = null;
+    if (focusButton) btn.focus();
+  };
+  const show = (mb: HTMLElement, focusFirst = false) => {
+    if (open && open !== mb) close();
+    open = mb;
+    mb.setAttribute('data-open', '');
+    mb.querySelector(':scope > .mb-btn')!.setAttribute('aria-expanded', 'true');
+    if (focusFirst) itemsOf(mb.querySelector(':scope > .menu')!)[0]?.focus();
+  };
+
+  document.addEventListener('pointerdown', (e) => {
+    const t = e.target as HTMLElement;
+    const btn = t.closest<HTMLElement>('.mb-btn');
+    if (btn) {
+      e.preventDefault(); // keep the caret where it was (Notepad)
+      const mb = btn.parentElement!;
+      if (open === mb) close();
+      else show(mb);
+      return;
+    }
+    if (open && !open.contains(t)) close();
+  });
+
+  // while one menu is open, pointing at another title on the same bar opens that one
+  document.addEventListener('pointerover', (e) => {
+    const btn = (e.target as HTMLElement).closest<HTMLElement>('.mb-btn');
+    if (btn && open && open !== btn.parentElement && open.parentElement === btn.parentElement!.parentElement) {
+      show(btn.parentElement!);
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    const mi = (e.target as HTMLElement).closest<HTMLElement>('.mi');
+    if (!mi) return;
+    if (mi.getAttribute('aria-disabled') === 'true') {
+      e.preventDefault();
+      return;
+    }
+    if (mi.hasAttribute('aria-haspopup')) {
+      // a submenu: tapping opens it (pointing at it already does)
+      e.preventDefault();
+      const li = mi.parentElement!;
+      li.parentElement!.querySelectorAll(':scope > [data-sub-open]').forEach((x) => x !== li && x.removeAttribute('data-sub-open'));
+      li.toggleAttribute('data-sub-open');
+      return;
+    }
+    const popover = mi.closest<HTMLElement>('[popover]');
+    close();
+    try {
+      popover?.hidePopover();
+    } catch {}
+    const action = mi.dataset.action;
+    if (action) mi.dispatchEvent(new CustomEvent('menu', { detail: action, bubbles: true }));
+  });
+
+  document.addEventListener('keydown', (e) => {
+    const t = e.target as HTMLElement;
+
+    // on a menu bar title
+    if (t.matches('.mb-btn')) {
+      const bar = t.closest('[data-menubar]')!;
+      const tops = topButtons(bar);
+      const i = tops.indexOf(t);
+      if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        show(t.parentElement!, true);
+      } else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+        e.preventDefault();
+        tops[(i + (e.key === 'ArrowRight' ? 1 : -1) + tops.length) % tops.length].focus();
+      } else if (e.key === 'Escape' && open) {
+        e.preventDefault();
+        close(true);
+      }
+      return;
+    }
+
+    // inside a menu
+    if (!t.matches('.mi')) return;
+    const list = t.closest('[role="menu"]')!;
+    const items = itemsOf(list);
+    const i = items.indexOf(t);
+    const parentItem = list.parentElement?.matches('.mi-li') ? list.parentElement.querySelector<HTMLElement>(':scope > .mi') : null;
+    const bar = t.closest('[data-menubar]');
+    const popover = t.closest<HTMLElement>('[popover]');
+    const stepTop = (dir: 1 | -1) => {
+      if (!bar || !open) return;
+      const tops = topButtons(bar);
+      const next = tops[(tops.indexOf(open.querySelector<HTMLElement>(':scope > .mb-btn')!) + dir + tops.length) % tops.length];
+      show(next.parentElement!, true);
+    };
+
+    switch (e.key) {
+      case 'ArrowDown':
+      case 'ArrowUp': {
+        e.preventDefault();
+        const step = e.key === 'ArrowDown' ? 1 : -1;
+        items[(i + step + items.length) % items.length]?.focus();
+        break;
+      }
+      case 'Home':
+      case 'End':
+        e.preventDefault();
+        (e.key === 'Home' ? items[0] : items.at(-1))?.focus();
+        break;
+      case 'ArrowRight': {
+        e.preventDefault();
+        const sub = t.parentElement!.querySelector(':scope > [role="menu"]');
+        if (sub) itemsOf(sub)[0]?.focus();
+        else stepTop(1);
+        break;
+      }
+      case 'Enter':
+      case ' ': {
+        e.preventDefault();
+        const sub = t.parentElement!.querySelector(':scope > [role="menu"]');
+        if (sub) itemsOf(sub)[0]?.focus();
+        else t.click();
+        break;
+      }
+      case 'ArrowLeft':
+        e.preventDefault();
+        if (parentItem) parentItem.focus();
+        else stepTop(-1);
+        break;
+      case 'Escape':
+        e.preventDefault();
+        if (parentItem) parentItem.focus();
+        else if (bar) close(true);
+        else if (popover) {
+          popover.hidePopover();
+          document.querySelector<HTMLElement>(`[popovertarget="${popover.id}"]`)?.focus();
+        }
+        break;
+    }
+  });
+}

@@ -76,6 +76,18 @@ A Page with a dated, short account of what Ekin is focused on at the moment, acr
 One dated piece of writing on the Notes Page. The Notes Page may be empty.
 _Avoid_: post, blog entry, article
 
+**Desktop**:
+A Page styled as a small Windows 98-style computer: icons, windows, a taskbar with a clock, and a Start menu. It is reached only from the header (after Contact), has no Section on the home page, and does not use the shared shell.
+_Avoid_: playground, OS page, easter egg
+
+**App**:
+A program on the Desktop that opens in its own Window: Notepad (About), Mail, Media Player (Eksi's videos), Recycle Bin, Date/Time Properties, and Paint (to come). A Desktop icon opens either an App or a link.
+_Avoid_: widget, tool
+
+**Window**:
+The frame an App opens in on the Desktop: a title bar, an optional menu bar and status bar. Windows can be dragged, resized, minimised to the taskbar and maximised.
+_Avoid_: modal, panel (a dialog such as Shut Down is a Window too)
+
 ## Flagged ambiguities
 
 - "Research" meant both the research positions held and the research interests. Resolution: positions are Experiences; the Research Section is interests and publications only.

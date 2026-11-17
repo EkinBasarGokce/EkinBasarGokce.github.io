@@ -1,0 +1,49 @@
+---
+/**
+ * Mail: a New Message window. Send opens the visitor's own mail program with
+ * everything filled in. The addresses are put together in the browser, as on
+ * the Contact section, so they never sit whole in the HTML.
+ */
+import Window from '../Window.astro';
+import type { Menu } from '../types';
+import { site, isTodo } from '../../../site';
+import { iconUri } from '../../../lib/pixel';
+
+const emails = site.emails
+  .filter((e) => !isTodo(e.address) && e.address.includes('@'))
+  .map((e) => {
+    const [u, d] = e.address.split('@');
+    return { label: e.label, u, d };
+  });
+
+const menus: Menu[] = [
+  {
+    label: '&File',
+    items: [{ label: '&Send Message', action: 'send', key: 'Alt+S' }, 'sep', { label: '&Close', action: 'close' }],
+  },
+];
+---
+
+<Window id="mail" title="New Message" icon="mail" w={460} h={360} minW={300} minH={260} menus={menus}>
+  <form class="mail-form" data-mail>
+    <div class="mail-tools">
+      <button type="submit" class="tool">
+        <img src={iconUri('mail')} width="32" height="32" alt="" />
+        <span><span class="u">S</span>end</span>
+      </button>
+    </div>
+    <div class="mail-fields">
+      <label for="mail-to">To:</label>
+      <select id="mail-to" name="to">
+        {emails.map((e, i) => <option value={i} data-u={e.u} data-d={e.d} data-label={e.label}>{e.label}</option>)}
+      </select>
+      <label for="mail-subject">Subject:</label>
+      <input id="mail-subject" name="subject" type="text" autocomplete="off" data-autofocus />
+    </div>
+    <textarea name="body" aria-label="Message"></textarea>
+    <p class="mail-fallback">
+      {emails.map((e) => <>{e.label}: {e.u} [at] {e.d}<br /></>)}
+    </p>
+  </form>
+  <div class="statusbar" slot="status"><p data-mail-status>Ready</p></div>
+</Window>

@@ -1,0 +1,36 @@
+---
+/** The Start menu: a popover above the Start button, so it opens even without JavaScript. */
+import MenuList from './MenuList.astro';
+import type { MenuEntry } from './types';
+import { site } from '../../site';
+
+const entries: MenuEntry[] = [
+  {
+    label: '&Programs',
+    icon: 'folder',
+    items: [
+      { label: '&Mail', icon: 'mail', open: 'mail' },
+      { label: 'Media &Player', icon: 'media', open: 'media' },
+      { label: '&Notepad', icon: 'notepad', open: 'about' },
+    ],
+  },
+  {
+    label: '&Documents',
+    icon: 'folder',
+    items: [
+      { label: '&about.txt', icon: 'notepad', open: 'about' },
+      { label: '&CV', icon: 'document', href: site.cv, newTab: true },
+    ],
+  },
+  { label: '&Settings', icon: 'folder', items: [{ label: '&Date/Time', icon: 'clock', open: 'datetime' }] },
+  'sep',
+  { label: '&Back to website', icon: 'globe', href: '/' },
+  { label: 'Sh&ut Down...', icon: 'computer', action: 'shutdown' },
+];
+const [first, ...rest] = site.name.split(' ');
+---
+
+<div id="start-menu" class="start-menu" popover>
+  <p class="sm-banner" aria-hidden="true"><b>{first}</b> {rest.join(' ')}</p>
+  <MenuList entries={entries} class="sm-list" label="Start" />
+</div>

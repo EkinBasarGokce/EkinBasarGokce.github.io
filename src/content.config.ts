@@ -8,9 +8,11 @@
  *   Add a photo                            -> drop it in src/assets/photos/
  *                                             (+ optional caption in photos.yaml)
  *   Add a home section                     -> add one .md file in sections/
+ *   Add an icon to the Desktop page        -> add one entry in desktop.yaml
  */
 import { defineCollection } from 'astro:content';
 import { glob, file } from 'astro/loaders';
+import { ICON_NAMES } from './lib/pixel';
 import { z } from 'astro/zod';
 
 /** "2024", "2024-09" or "present" */
@@ -221,6 +223,22 @@ const notes = defineCollection({
   }),
 });
 
+/** Icons on the Desktop page (/desktop/). Each opens an app window or a link. */
+const desktop = defineCollection({
+  loader: file('src/content/desktop.yaml'),
+  schema: z
+    .object({
+      label: z.string(),
+      icon: z.enum(ICON_NAMES), // a drawing from src/lib/pixel.ts
+      app: z.string().optional(), // a window on the Desktop page: about, mail, media, recycle...
+      href: z.string().optional(), // or a link
+      newTab: z.boolean().default(false),
+      order: z.number(),
+      draft: z.boolean().default(false),
+    })
+    .refine((d) => !!d.app !== !!d.href, { message: 'give exactly one of `app` or `href`' }),
+});
+
 export const collections = {
   experience,
   education,
@@ -233,4 +251,5 @@ export const collections = {
   cards,
   sections,
   notes,
+  desktop,
 };

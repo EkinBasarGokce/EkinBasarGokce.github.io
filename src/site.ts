@@ -39,6 +39,9 @@ export const site = {
   /** Put your CV at public/cv.pdf; the link appears only when the file exists. */
   cv: '/cv.pdf',
 
+  /** Pages linked at the end of the top nav (after Contact) and nowhere else. */
+  headerLinks: [{ label: 'Desktop', href: '/desktop/' }],
+
   /** Pages listed in the footer. Add a page file in src/pages/, then one line here. */
   pages: [
     { label: 'Now', href: '/now/' },

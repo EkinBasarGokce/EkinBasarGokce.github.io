@@ -1,0 +1,16 @@
+---
+/** The bar along the bottom: Start, a button per open window, and the clock. */
+---
+
+<div class="taskbar" role="group" aria-label="Taskbar">
+  <button type="button" class="start" popovertarget="start-menu" aria-haspopup="menu" aria-expanded="false" data-start>
+    <img src="/icon-32.png" width="16" height="16" alt="" />
+    <span><b>Start</b></span>
+  </button>
+  <ul class="tasks" role="list" aria-label="Open windows" data-tasks></ul>
+  <div class="tray">
+    <button type="button" class="clock" data-clock title="Double-click for Date/Time Properties">
+      <time data-clock-time></time>
+    </button>
+  </div>
+</div>

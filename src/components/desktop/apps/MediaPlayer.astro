@@ -1,0 +1,71 @@
+---
+/**
+ * Media Player with Eksi's videos (src/content/videos.yaml). Posters are
+ * downloaded at build time and served from this site; YouTube (no-cookie)
+ * loads only when a visitor presses Play.
+ */
+import { getCollection } from 'astro:content';
+import { getImage } from 'astro:assets';
+import Window from '../Window.astro';
+import type { Menu } from '../types';
+import { iconUri, glyphUri } from '../../../lib/pixel';
+
+const videos = await getCollection('videos');
+const items = await Promise.all(
+  videos.map(async (v) => ({
+    id: v.id,
+    title: v.data.title,
+    poster: (await getImage({ src: `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg`, width: 480, height: 360, format: 'webp' })).src,
+  })),
+);
+const first = items[0];
+
+const menus: Menu[] = [
+  { label: '&File', items: [{ label: '&Close', action: 'close' }] },
+  {
+    label: '&Play',
+    items: [
+      { label: '&Play', action: 'play' },
+      { label: '&Stop', action: 'stop' },
+      'sep',
+      { label: 'P&revious', action: 'prev' },
+      { label: '&Next', action: 'next' },
+    ],
+  },
+];
+---
+
+<Window id="media" title="Eksi Videos - Media Player" icon="media" w={480} h={440} minW={280} minH={320} menus={menus} class="player">
+  {
+    first && (
+      <>
+        <div class="screen-area" data-screen>
+          <img data-poster src={first.poster} width="480" height="360" alt="" />
+          <button type="button" class="bigplay" data-media="play" aria-label="Play">
+            <span>
+              <img src={glyphUri('play')} width="7" height="7" alt="" />
+            </span>
+          </button>
+        </div>
+        <div class="transport">
+          <button type="button" data-media="play" aria-label="Play"><img src={glyphUri('play')} width="7" height="7" alt="" /></button>
+          <button type="button" data-media="stop" aria-label="Stop"><img src={glyphUri('stop')} width="7" height="7" alt="" /></button>
+          <button type="button" data-media="prev" aria-label="Previous"><img src={glyphUri('prev')} width="7" height="7" alt="" /></button>
+          <button type="button" data-media="next" aria-label="Next"><img src={glyphUri('next')} width="7" height="7" alt="" /></button>
+          <p class="now-playing" data-now aria-live="polite">{first.title}</p>
+        </div>
+        <ul class="list playlist" role="listbox" aria-label="Playlist" data-playlist>
+          {items.map((v, i) => (
+            <li class="opt" role="option" tabindex={i === 0 ? 0 : -1} aria-selected={i === 0 ? 'true' : 'false'} data-id={v.id} data-title={v.title} data-poster={v.poster}>
+              <img src={iconUri('media')} width="16" height="16" alt="" />
+              {v.title}
+            </li>
+          ))}
+        </ul>
+        <p class="player-links">
+          <a href="https://www.youtube.com/@eksimusik" target="_blank" rel="noopener">Eksi on YouTube</a>
+        </p>
+      </>
+    )
+  }
+</Window>

@@ -1,0 +1,28 @@
+---
+/**
+ * A full-screen page with none of the site's shell (no header, footer or theme):
+ * the Desktop page brings its own taskbar and Start menu.
+ */
+import '../styles/win98.css';
+import Head from '../components/Head.astro';
+import { uiCssVars } from '../lib/pixel';
+
+interface Props {
+  title: string;
+  description: string;
+}
+const { title, description } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en" style={uiCssVars()}>
+  <head>
+    <Head title={title} description={description} cover />
+    <meta name="color-scheme" content="light" />
+    <meta name="theme-color" content="#008080" />
+    <script is:inline>document.documentElement.classList.add('js');</script>
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>

@@ -1,0 +1,77 @@
+---
+/** Date/Time Properties: opens when you double-click the clock. A calendar and a ticking clock; nothing to set. */
+import Window from '../Window.astro';
+
+const months = Array.from({ length: 12 }, (_, i) => new Date(2000, i, 1).toLocaleString('en', { month: 'long' }));
+const days = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const ticks = Array.from({ length: 12 }, (_, i) => {
+  const a = (i * Math.PI) / 6;
+  const big = i % 3 === 0;
+  const s = big ? 6 : 3;
+  return { x: 50 + 43 * Math.sin(a) - s / 2, y: 50 - 43 * Math.cos(a) - s / 2, s, big };
+});
+---
+
+<Window id="datetime" title="Date/Time Properties" icon="clock" w={404} dialog>
+  <div class="pad">
+    <div class="tabs" role="tablist">
+      <button type="button" class="tab" role="tab" id="dt-tab-1" aria-controls="dt-panel-1" aria-selected="true" data-tab><span>Date &amp; Time</span></button>
+      <button type="button" class="tab" role="tab" id="dt-tab-2" aria-controls="dt-panel-2" aria-selected="false" tabindex="-1" data-tab><span>Time Zone</span></button>
+    </div>
+
+    <div class="tab-panel" id="dt-panel-1" role="tabpanel" aria-labelledby="dt-tab-1">
+      <div class="dt-grid">
+        <fieldset>
+          <legend>Date</legend>
+          <div class="dt-row">
+            <select aria-label="Month" data-month>
+              {months.map((m, i) => <option value={i}>{m}</option>)}
+            </select>
+            <span class="spin">
+              <input type="number" aria-label="Year" min="1980" max="2099" data-year />
+              <span class="spin-btns">
+                <button type="button" data-step="1" aria-label="Next year" tabindex="-1"></button>
+                <button type="button" data-step="-1" aria-label="Previous year" tabindex="-1"></button>
+              </span>
+            </span>
+          </div>
+          <table class="cal" data-cal>
+            <thead>
+              <tr>{days.map((d) => <th scope="col">{d}</th>)}</tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </fieldset>
+        <fieldset>
+          <legend>Time</legend>
+          <svg class="analog" viewBox="0 0 100 100" aria-hidden="true">
+            {
+              ticks.map((t) => (
+                <rect x={t.x} y={t.y} width={t.s} height={t.s} fill={t.big ? '#008080' : '#000'} stroke={t.big ? '#000' : 'none'} stroke-width="0.8" />
+              ))
+            }
+            <polygon data-hand="h" points="50,25 54,50 50,56 46,50" fill="#008080" stroke="#000" stroke-width="1" />
+            <polygon data-hand="m" points="50,12 53,50 50,58 47,50" fill="#008080" stroke="#000" stroke-width="1" />
+            <line data-hand="s" x1="50" y1="60" x2="50" y2="10" stroke="#000" stroke-width="1" />
+          </svg>
+          <p class="field dt-time" data-time></p>
+        </fieldset>
+      </div>
+      <p class="dt-tz" data-tzline></p>
+    </div>
+
+    <div class="tab-panel" id="dt-panel-2" role="tabpanel" aria-labelledby="dt-tab-2" hidden>
+      <div class="tz-lines">
+        <p>Your time zone: <b data-tz></b></p>
+        <p>Time in İstanbul: <b data-ist></b></p>
+        <label class="check-row"><input type="checkbox" checked disabled /><span>Automatically adjust clock for daylight saving changes</span></label>
+      </div>
+    </div>
+
+    <div class="dlg-buttons">
+      <button type="button" class="btn default" data-dt="ok">OK</button>
+      <button type="button" class="btn" data-dt="cancel">Cancel</button>
+      <button type="button" class="btn" data-dt="apply" disabled>Apply</button>
+    </div>
+  </div>
+</Window>

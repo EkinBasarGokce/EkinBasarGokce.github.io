@@ -1,0 +1,18 @@
+---
+/** Recycle Bin: an empty folder, as it should be. */
+import Window from '../Window.astro';
+import type { Menu } from '../types';
+
+const menus: Menu[] = [
+  { label: '&File', items: [{ label: 'Empty Recycle &Bin', action: 'empty', disabled: true }, 'sep', { label: '&Close', action: 'close' }] },
+];
+---
+
+<Window id="recycle" title="Recycle Bin" icon="recycle" w={460} h={280} minW={260} menus={menus}>
+  <div class="list bin" role="region" aria-label="Recycle Bin contents, empty">
+    <div class="colheads" aria-hidden="true">
+      <span>Name</span><span>Original Location</span><span>Date Deleted</span><span>Size</span>
+    </div>
+  </div>
+  <div class="statusbar" slot="status"><p>0 object(s)</p><p>0 bytes</p></div>
+</Window>

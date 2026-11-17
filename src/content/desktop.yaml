@@ -1,0 +1,47 @@
+# Icons on the Desktop page (/desktop/), top to bottom, then the next column.
+#   app:  opens that window (about, mail, media, recycle, datetime)
+#   href: opens a link instead; links get the little shortcut arrow
+#   icon: a drawing from src/lib/pixel.ts
+- id: about
+  label: About
+  icon: notepad
+  app: about
+  order: 10
+- id: mail
+  label: Mail
+  icon: mail
+  app: mail
+  order: 20
+- id: instagram
+  label: Instagram
+  icon: camera
+  href: "https://www.instagram.com/metallician/"
+  newTab: true
+  order: 30
+- id: eksi-instagram
+  label: Eksi on Instagram
+  icon: camera-blue
+  href: "https://www.instagram.com/eksidegileksi/"
+  newTab: true
+  order: 40
+- id: eksi-videos
+  label: Eksi Videos
+  icon: media
+  app: media
+  order: 50
+- id: cv
+  label: CV
+  icon: document
+  href: /cv.pdf
+  newTab: true
+  order: 60
+- id: website
+  label: Website
+  icon: globe
+  href: /
+  order: 70
+- id: recycle-bin
+  label: Recycle Bin
+  icon: recycle
+  app: recycle
+  order: 80

@@ -1,0 +1,36 @@
+---
+/** Start > Shut Down...: a modal dialog over a dimmed screen, then the classic black screen and back to the website. */
+import { iconUri, glyphUri } from '../../../lib/pixel';
+---
+
+<dialog id="shutdown" class="win" aria-labelledby="shutdown-title" data-active>
+  <header class="title">
+    <img class="title-icon" src={iconUri('computer')} width="16" height="16" alt="" />
+    <h2 id="shutdown-title">Shut Down</h2>
+    <div class="title-btns">
+      <button type="button" class="tb" data-cancel aria-label="Close">
+        <img src={glyphUri('close')} width="8" height="7" alt="" />
+      </button>
+    </div>
+  </header>
+  <form class="pad" data-shutdown-form>
+    <div class="shut">
+      <img src={iconUri('computer')} width="32" height="32" alt="" />
+      <div>
+        <p>What do you want the computer to do?</p>
+        <div class="shut-opts">
+          <label class="check-row"><input type="radio" name="what" value="off" checked /><span><span class="u">S</span>hut down</span></label>
+          <label class="check-row"><input type="radio" name="what" value="restart" /><span><span class="u">R</span>estart</span></label>
+        </div>
+      </div>
+    </div>
+    <div class="dlg-buttons">
+      <button type="submit" class="btn default">OK</button>
+      <button type="button" class="btn" data-cancel>Cancel</button>
+    </div>
+  </form>
+</dialog>
+
+<div class="off" tabindex="-1" data-off hidden>
+  <p data-off-text>It’s now safe to turn off<br />your computer.</p>
+</div>
