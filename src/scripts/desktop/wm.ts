@@ -388,8 +388,15 @@ export class WM {
 
   private wire(el: HTMLElement) {
     const id = el.id;
-    // any press inside a window brings it to the front
-    el.addEventListener('pointerdown', () => this.activeId !== id && this.focus(id), true);
+    // any press inside a window brings it to the front, and keys follow it there
+    el.addEventListener(
+      'pointerdown',
+      () => {
+        if (this.activeId !== id) this.focus(id);
+        if (!el.contains(document.activeElement)) el.focus({ preventScroll: true });
+      },
+      true,
+    );
     el.addEventListener('focusin', () => this.activeId !== id && this.focus(id));
 
     el.querySelectorAll<HTMLElement>('.title [data-act]').forEach((b) =>

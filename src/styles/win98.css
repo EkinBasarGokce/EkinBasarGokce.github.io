@@ -804,6 +804,14 @@ dialog.win::backdrop {
   background: var(--sel);
   text-shadow: none;
 }
+/* on a picture the visitor set as wallpaper, labels get the 98 solid background */
+.desktop.custom-wallpaper .icon span {
+  background: var(--desk);
+  text-shadow: none;
+}
+.desktop.custom-wallpaper .icon[data-selected] span {
+  background: var(--sel);
+}
 /* once the script has placed them, icons sit where the visitor left them */
 .icons.free {
   inset: 0;
@@ -1368,6 +1376,16 @@ dialog.win::backdrop {
 .pt-paper [data-pt-canvas]:focus-visible {
   outline: 1px dotted var(--hilite);
   outline-offset: 1px;
+}
+/* overlay stacking: floating pixels, then the grid, then marquees and the text box */
+.pt-paper .pt-overlay .pt-sel-float {
+  z-index: 1;
+}
+.pt-paper .pt-overlay .pt-grid {
+  z-index: 2;
+}
+.pt-paper .pt-overlay :is(.pt-sel-ants, .pt-mag-rect, .pt-textframe, .pt-textshown, .pt-textflow, .pt-textband, .pt-textedge, .pt-texthandle) {
+  z-index: 3;
 }
 /* a layer over the picture for marquees, floating selections and text (core.overlay) */
 .pt-overlay {

@@ -172,7 +172,17 @@ function setup(wm: WM) {
   }
   function autosave() {
     try {
-      localStorage.setItem(STORE, JSON.stringify({ name, named, dirty, png: canvas.toDataURL('image/png') }));
+      // while an operation is open (a selection being moved, a curve being bent)
+      // the canvas shows work in progress: save the picture as it was before it
+      let png: string;
+      if (opBefore) {
+        const c = document.createElement('canvas');
+        c.width = opBefore.w;
+        c.height = opBefore.h;
+        c.getContext('2d')!.putImageData(imageOf(opBefore), 0, 0);
+        png = c.toDataURL('image/png');
+      } else png = canvas.toDataURL('image/png');
+      localStorage.setItem(STORE, JSON.stringify({ name, named, dirty, png }));
     } catch {
       // storage full or blocked: the drawing isn't kept across visits, and an
       // older copy must not come back in its place
@@ -188,11 +198,15 @@ function setup(wm: WM) {
     } catch {}
   }
   async function restoreAutosave() {
-    let saved: { name?: string; named?: boolean; dirty?: boolean; png?: string } | null = null;
+    let saved: { name?: unknown; named?: unknown; dirty?: unknown; png?: unknown } | null = null;
     try {
       saved = JSON.parse(localStorage.getItem(STORE) ?? 'null');
     } catch {}
-    if (!saved?.png || !saved.png.startsWith('data:image/png;base64,')) return false;
+    if (!saved) return false;
+    if (typeof saved !== 'object' || typeof saved.png !== 'string' || !saved.png.startsWith('data:image/png;base64,')) {
+      forget(); // not ours or damaged: drop it
+      return false;
+    }
     const loaded = await bitmapFromUrl(saved.png).catch(() => null);
     if (!loaded) return false;
     adopt(loaded);
@@ -283,6 +297,7 @@ function setup(wm: WM) {
 
   // ── Dialogs (native <dialog>, dressed as 98 windows) ─────────────
   function dialog(heading: string, body: HTMLElement, buttons: DialogButton[]) {
+    const had = document.activeElement;
     return new Promise<{ value: string; form: HTMLFormElement }>((resolve) => {
       const d = document.createElement('dialog');
       d.className = 'win pt-dialog';
@@ -320,7 +335,9 @@ function setup(wm: WM) {
       close.addEventListener('click', () => d.close('cancel'));
       d.addEventListener('close', () => {
         d.remove();
-        canvas.focus({ preventScroll: true });
+        // back to whatever had focus (an open text box, say), else the picture
+        if (had instanceof HTMLElement && had.isConnected && win.contains(had)) had.focus({ preventScroll: true });
+        else canvas.focus({ preventScroll: true });
         resolve({ value: d.returnValue || 'cancel', form });
       });
       document.body.append(d);
@@ -704,6 +721,7 @@ function setup(wm: WM) {
   canvas.addEventListener('dblclick', (e) => tool()?.dblclick?.(toPixel(e), e));
 
   // ── Resizing the picture by its handles ──────────────────────────
+  let handleDrag: { cancel(): void } | null = null;
   win.querySelectorAll<HTMLElement>('[data-pt-handle]').forEach((handle) => {
     handle.addEventListener('click', () => {}); // a tap target, so a finger lands here, not on the canvas
     handle.addEventListener('pointerdown', (e) => {
@@ -728,17 +746,21 @@ function setup(wm: WM) {
         sizeLine.textContent = `${w}x${h}`;
       };
       move(e);
-      const end = () => {
+      const stop = (apply: boolean) => {
         handle.removeEventListener('pointermove', move);
-        handle.removeEventListener('pointerup', end);
-        handle.removeEventListener('pointercancel', end);
+        handle.removeEventListener('pointerup', up);
+        handle.removeEventListener('pointercancel', cancel);
+        handleDrag = null;
         ghost.hidden = true;
         sizeLine.textContent = '';
-        resizeTo(w, h);
+        if (apply) resizeTo(w, h);
       };
+      const up = () => stop(true);
+      const cancel = () => stop(false);
+      handleDrag = { cancel };
       handle.addEventListener('pointermove', move);
-      handle.addEventListener('pointerup', end);
-      handle.addEventListener('pointercancel', end);
+      handle.addEventListener('pointerup', up);
+      handle.addEventListener('pointercancel', cancel);
     });
   });
 
@@ -772,12 +794,18 @@ function setup(wm: WM) {
   win.addEventListener('menu', (e) => {
     const a = (e as CustomEvent<string>).detail;
     if (drag) return;
-    canvas.focus({ preventScroll: true }); // shortcuts keep working; dialogs take focus themselves
+    // shortcuts keep working (dialogs take focus themselves); an open text box keeps it
+    if (!overlay.contains(document.activeElement)) canvas.focus({ preventScroll: true });
     menus.get(a)?.();
   });
   win.addEventListener('keydown', (e) => {
     const target = e.target as HTMLElement;
     const typing = target.matches('input, textarea, select, [contenteditable]');
+    if (e.key === 'Escape' && handleDrag) {
+      e.preventDefault();
+      handleDrag.cancel();
+      return;
+    }
     if (e.key === 'Escape' && drag) {
       e.preventDefault();
       drag = null;
@@ -785,11 +813,21 @@ function setup(wm: WM) {
       render();
       return;
     }
-    if (!typing && tool()?.key?.(e)) {
+    // tools get keys aimed at the picture (or the window), never ones meant for a menu or a control
+    const forPicture = (target === canvas || target === win) && !win.querySelector('.mb[data-open]');
+    if (forPicture && tool()?.key?.(e)) {
       e.preventDefault();
       return;
     }
-    if (typing) return;
+    if (typing) {
+      // Save and Open still work from the text box (they commit the text first)
+      const k = e.key.toLowerCase();
+      if (overlay.contains(target) && (e.ctrlKey || e.metaKey) && !e.altKey && (k === 's' || k === 'o')) {
+        e.preventDefault();
+        win.dispatchEvent(new CustomEvent('menu', { detail: k === 's' ? 'save' : 'open' }));
+      }
+      return;
+    }
     if (e.key === 'Delete' && menus.has('clearsel')) {
       e.preventDefault();
       menus.get('clearsel')!();
@@ -916,7 +954,9 @@ function setup(wm: WM) {
   });
   // keep the drawing if the visitor leaves or reloads while Paint is open
   addEventListener('pagehide', () => {
-    if (wm.isOpen('paint') && dirty) autosave();
+    if (!wm.isOpen('paint')) return;
+    flush(); // a moved selection or typed text goes into the picture first
+    if (dirty) autosave();
   });
 
   setTool('pencil');
@@ -924,7 +964,7 @@ function setup(wm: WM) {
   title();
   layout();
   void (async () => {
-    if (await restoreAutosave()) return;
+    if (await restoreAutosave().catch(() => false)) return;
     // a first picture that fits the window, leaving room for the padding and
     // the resize handles so no scroll bars appear
     const w = Math.max(64, Math.min(640, view.clientWidth - 22));
