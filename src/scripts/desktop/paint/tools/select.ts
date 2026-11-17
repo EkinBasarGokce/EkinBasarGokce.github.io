@@ -252,6 +252,16 @@ export function install(core: Core) {
   let touched: R.Box | null = null;
   /** the internal clipboard (always kept, whatever the system clipboard allows) */
   let clip: R.Bitmap | null = null;
+  /**
+   * The system clipboard still holds something older than `clip`: the last
+   * copy's write to it has not finished yet (it takes 150 ms to a second), or
+   * it failed. Pastes then use `clip`.
+   */
+  let sysStale = false;
+  /** the last copy's write to the system clipboard is still running */
+  let writing = false;
+  /** which copy the running write belongs to (a newer copy overrides an older write) */
+  let writeId = 0;
   let shownBg: R.Color | null = null;
   let lastBm = core.bm();
 
@@ -629,14 +639,38 @@ export function install(core: Core) {
     const img = selected();
     if (!img) return false;
     clip = img;
-    // the system clipboard too, as a PNG (outside a free-form shape is transparent)
+    // the system clipboard too, as a PNG (outside a free-form shape is transparent).
+    // Until that write has finished, pastes take `clip`; if it fails, they keep doing so.
+    const id = ++writeId;
+    sysStale = true;
+    writing = false;
     try {
       if (typeof ClipboardItem === 'function' && navigator.clipboard?.write) {
-        void navigator.clipboard.write([new ClipboardItem({ 'image/png': core.toPng(img) })]).catch(() => {});
+        writing = true;
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': core.toPng(img) })]).then(
+          () => {
+            if (id !== writeId) return;
+            writing = false;
+            sysStale = false;
+          },
+          () => {
+            if (id === writeId) writing = false;
+          },
+        );
       }
-    } catch {}
+    } catch {
+      writing = false;
+    }
     return true;
   }
+  /** the image to paste is `clip`, not what the system clipboard holds */
+  const pasteClip = () => !!clip && sysStale;
+  // Coming back to the page after a copy whose write failed (or was never
+  // possible): something may have been copied elsewhere since, so the system
+  // clipboard is the newer one again.
+  window.addEventListener('focus', () => {
+    if (!writing) sysStale = false;
+  });
   /** an image file or blob to a floating bitmap (scaled to fit MAX_SIDE), or null */
   async function decode(blob: Blob): Promise<R.Bitmap | null> {
     let pic: ImageBitmap | null = null;
@@ -700,6 +734,7 @@ export function install(core: Core) {
     setSel({ box: { x0: at.x, y0: at.y, x1: at.x + img.w - 1, y1: at.y + img.h - 1 }, mask: null, float: img });
   }
   async function pasteClipboard() {
+    if (pasteClip()) return paste(R.cloneBitmap(clip!));
     let img: R.Bitmap | null = null;
     try {
       for (const item of await navigator.clipboard.read()) {
@@ -719,10 +754,11 @@ export function install(core: Core) {
     const a = document.activeElement as HTMLElement | null;
     if (!a || !core.win.contains(a) || a.matches('input, textarea, select') || a.isContentEditable) return;
     const items = [...(e.clipboardData?.items ?? [])];
-    const file =
-      items.find((it) => it.kind === 'file' && it.type.startsWith('image/'))?.getAsFile() ??
-      [...(e.clipboardData?.files ?? [])].find((f) => f.type.startsWith('image/')) ??
-      null;
+    const file = pasteClip()
+      ? null
+      : (items.find((it) => it.kind === 'file' && it.type.startsWith('image/'))?.getAsFile() ??
+        [...(e.clipboardData?.files ?? [])].find((f) => f.type.startsWith('image/')) ??
+        null);
     if (!file && !clip) return;
     e.preventDefault();
     void (async () => {
